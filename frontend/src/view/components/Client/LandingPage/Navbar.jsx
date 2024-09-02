@@ -14,10 +14,11 @@ const Navbar = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    const defaultProfilePicture = 'https://www.imghost.net/ib/YgQep2KBICssXI1_1725211680.png'; // Replace with your actual default image URL
     const user = JSON.parse(localStorage.getItem('user'));
     if (user) {
       setUserName(`${user.firstName} ${user.lastName}`);
-      setProfilePicture(user.profilePicture); // Set the profile picture if available
+      setProfilePicture(user.profilePicture ? user.profilePicture.url || user.profilePicture : defaultProfilePicture); 
       setIsAuthenticated(true);
     }
   }, []);
@@ -160,7 +161,7 @@ const Navbar = () => {
         >
           {profilePicture ? (
             <img 
-              src={profilePicture.url} // Assuming `profilePicture` contains a `url` field
+              src={profilePicture} 
               alt="Profile"
               className="w-8 h-8 rounded-full object-cover"
             />

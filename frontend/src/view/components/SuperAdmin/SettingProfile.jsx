@@ -24,16 +24,27 @@ const SettingProfile = () => {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
+  const defaultProfilePictureUrl = 'https://www.imghost.net/ib/YgQep2KBICssXI1_1725211680.png'; // Replace with your actual default image URL
+
   useEffect(() => {
     const storedUser = JSON.parse(localStorage.getItem('user'));
+
     if (storedUser) {
-      setEmail(storedUser.email || '');
-      setPhoneNumber(storedUser.phoneNumber || '');
-      setBiodata(storedUser.role || '');
-      setUsername(storedUser.username || '');
-      setFirstName(storedUser.firstName || '');
-      setLastName(storedUser.lastName || '');
-      setProfilePicture(storedUser.profilePicture || '');
+        setEmail(storedUser.email || '');
+        setPhoneNumber(storedUser.phoneNumber || '');
+        setBiodata(storedUser.role || '');
+        setUsername(storedUser.username || '');
+        setFirstName(storedUser.firstName || '');
+        setLastName(storedUser.lastName || '');
+
+        // Handle the profile picture logic
+        if (storedUser.profilePicture && storedUser.profilePicture.url) {
+            setProfilePicture(storedUser.profilePicture.url);
+        } else if (storedUser.profilePicture && typeof storedUser.profilePicture === 'string') {
+            setProfilePicture(storedUser.profilePicture);
+        } else {
+            setProfilePicture(defaultProfilePictureUrl);
+        }
     }
   }, []);
 
@@ -80,6 +91,7 @@ const SettingProfile = () => {
     };
 
     const storedUser = JSON.parse(localStorage.getItem('user')); // Retrieve the stored user data
+
     if (!storedUser || !storedUser._id) {
       console.error('User is not logged in or user ID is missing.');
       return;
@@ -93,6 +105,9 @@ const SettingProfile = () => {
         console.error('Error uploading profile picture:', error);
         return;
       }
+    } else if (!profilePictureUrl) {
+      // If profilePicture is empty or null, set it to default
+      profilePictureUrl = defaultProfilePictureUrl;
     }
 
     const updatedUser = {
@@ -156,7 +171,7 @@ const SettingProfile = () => {
       <div className="flex items-center justify-between">
         <div className="flex items-center">
           <img
-            src={profilePicture || 'default_profile_picture_url'}
+            src={profilePicture || defaultProfilePictureUrl}
             alt="Profile"
             className="w-20 h-20 rounded-full mr-4"
           />

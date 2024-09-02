@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 const AdminNavbar = ({ isAccountDropdownOpen, toggleAccountDropdown }) => {
   const [user, setUser] = useState({ firstName: '', lastName: '', profilePicture: '' });
   const navigate = useNavigate();
+  const defaultProfilePicture = '/mnt/data/image.png'; // Use your actual path or URL here
 
   useEffect(() => {
     const storedUser = JSON.parse(localStorage.getItem('user'));
@@ -43,14 +44,16 @@ const AdminNavbar = ({ isAccountDropdownOpen, toggleAccountDropdown }) => {
         <div className="relative flex items-center cursor-pointer" onClick={toggleAccountDropdown}>
           {user.profilePicture ? (
             <img 
-              src={user.profilePicture} // Assuming `profilePicture` is a URL
+              src={user.profilePicture.url || user.profilePicture} // Check for both structure cases
               alt="Profile"
               className="w-8 h-8 rounded-full object-cover"
             />
           ) : (
-            <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center">
-              <span className="text-white text-sm">{user.firstName.charAt(0)}{user.lastName.charAt(0)}</span>
-            </div>
+            <img 
+              src={defaultProfilePicture} 
+              alt="Default Profile"
+              className="w-8 h-8 rounded-full object-cover"
+            />
           )}
           <span className="ml-2 font-medium text-gray-800">
             {user.firstName} {user.lastName}
