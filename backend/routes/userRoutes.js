@@ -24,7 +24,9 @@
       router.put('/:id', updateUser);
 
       // Route to update user password
-      router.put('/:id/password', updateUserPassword);
+
+      router.put('/:id/password', updateUserPassword)
+
 
   // Protect and restrict access to superadmin route
   router.get('/superadmin', protect, verifySuperAdmin, (req, res) => {

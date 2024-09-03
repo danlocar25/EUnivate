@@ -70,10 +70,17 @@ const Login = () => {
         setError(data.message);
       }
     } catch (error) {
-      console.error('Error logging in:', error);
+      
+      if (error.response && error.response.status === 400) {
+      setError('Invalid email or password.');
+    } else if (error.response && error.response.status === 404) {
+      setError('Email not found.');
+    } else {
       setError('An error occurred while trying to log in. Please try again later.');
     }
-  };
+    console.error('Error logging in:', error);
+  }
+};
   
   
 

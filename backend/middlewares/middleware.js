@@ -14,8 +14,8 @@ export const protect = async (req, res, next) => {
 
       next();
     } catch (error) {
-      console.error(error);
-      res.status(401).json({ message: 'Not authorized, token failed' });
+      console.error('Token verification failed:', error.message); // Improved error message
+      res.status(401).json({ message: 'Not authorized, token failed', error: error.message });
     }
   }
 
@@ -23,6 +23,7 @@ export const protect = async (req, res, next) => {
     res.status(401).json({ message: 'Not authorized, no token' });
   }
 };
+
 
 // Middleware to verify superadmin role
 export const verifySuperAdmin = (req, res, next) => {

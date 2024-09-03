@@ -8,6 +8,8 @@ export const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '1h' });
 };
 
+
+
 // Update user information
 export const updateUser = async (req, res) => {
     const { id } = req.params;  // User ID passed as a parameter
@@ -34,36 +36,26 @@ export const updateUser = async (req, res) => {
       res.status(500).json({ message: 'Error updating user information', error });
     }
 };
+        export const updateUserPassword = async (req, res) => {
+          const { id } = req.params;  // User ID passed as a parameter
+          const { newPassword } = req.body; // New password from the request body
 
-// Update user password
-export const updateUserPassword = async (req, res) => {
-    const { id } = req.params;  // User ID passed as a parameter
-    const { currentPassword, newPassword } = req.body; // Current and new password
+          try {
+            const user = await User.findById(id);
 
-    try {
-        const user = await User.findById(id);
+            if (!user) {
+              return res.status(404).json({ message: 'User not found' });
+            }
 
-        if (!user) {
-            return res.status(404).json({ message: 'User not found' });
-        }
+            const salt = await bcrypt.genSalt(10);
+            const hashedNewPassword = await bcrypt.hash(newPassword, salt);
 
-        // Check if the current password is correct
-        const isMatch = await bcrypt.compare(currentPassword, user.password);
-        if (!isMatch) {
-            return res.status(400).json({ message: 'Current password is incorrect' });
-        }
+            user.password = hashedNewPassword;
+            await user.save();
 
-        // Hash the new password
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(newPassword, salt);
-
-        // Update the user's password
-        user.password = hashedPassword;
-        await user.save();
-
-        // Return a success message
-        res.status(200).json({ message: 'Password updated successfully' });
-    } catch (error) {
-        res.status(500).json({ message: 'Error updating password', error });
-    }
-};
+            res.status(200).json({ message: 'Password updated successfully' });
+          } catch (error) {
+            console.error('Error updating password:', error.message);
+            res.status(500).json({ message: 'Error updating password', error: error.message });
+          }
+        };
