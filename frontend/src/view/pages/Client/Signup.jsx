@@ -16,7 +16,6 @@ const Signup = () => {
   const [role, setRole] = useState("User"); // Default role
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState(""); // For displaying errors
-  const [success, setSuccess] = useState(""); // For displaying success message
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -54,10 +53,11 @@ const Signup = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(""); // Clear any previous errors
-    setSuccess(""); // Clear any previous success message
+    setLoading(true);
 
     if (!validatePassword(password)) {
       setError("Password must be at least 9 characters long and include at least one number and one symbol.");
+      setLoading(false);
       return;
     }
 
@@ -65,57 +65,54 @@ const Signup = () => {
 
     // Check if the profile picture is an object (likely a File) and needs to be uploaded
     if (profilePicture) {
-        try {
-            // Create a form data to upload the file
-            const formData = new FormData();
-            formData.append('file', profilePicture);
-            formData.append('upload_preset', 'EunivateImage'); // Add the upload preset if using Cloudinary
-            formData.append('folder', 'EunivateAssets'); // Optional: specify a folder in Cloudinary
-
-            const uploadResponse = await axios.post(
-                'https://api.cloudinary.com/v1_1/dzxzc7kwb/image/upload', 
-                formData
-            );
-
-            profilePictureUrl = uploadResponse.data.secure_url; // Get the uploaded image URL
-        } catch (uploadError) {
-            setError("Failed to upload profile picture. Please try again.");
-            console.error("Error uploading profile picture:", uploadError);
-            return;
-        }
+      try {
+        profilePictureUrl = await uploadImageToCloudinary(profilePicture);
+      } catch (uploadError) {
+        setError("Failed to upload profile picture. Please try again.");
+        setLoading(false);
+        return;
+      }
     }
 
     try {
       const response = await axios.post("http://localhost:5000/api/users", {
-          firstName,
-          lastName,
-          username,
-          email,
-          phoneNumber,
-          password,
-          profilePicture: profilePictureUrl, // Send the URL of the uploaded picture
-          role
+        firstName,
+        lastName,
+        username,
+        email,
+        phoneNumber,
+        password,
+        profilePicture: profilePictureUrl, // Send the URL of the uploaded picture
+        role
       });
 
-      setSuccess("Account created successfully!"); // Display success message
-      console.log(response.data);
+      const userData = response.data;
 
-      // Clear form fields after successful signup
-      setFirstName("");
-      setLastName("");
-      setUsername("");
-      setEmail("");
-      setPassword("");
-      setPhoneNumber("");
-      setProfilePicture(null);
+      if (userData._id && userData.accessToken) {
+        // Store user data in localStorage
+        localStorage.setItem('user', JSON.stringify({
+          _id: userData._id,
+          email: userData.email,
+          phoneNumber: userData.phoneNumber,
+          firstName: userData.firstName,
+          lastName: userData.lastName,
+          password: userData.password,
+          profilePicture: userData.profilePicture,
+          username: userData.username,
+          role: userData.role,          
+          token: userData.accessToken, // Store the access token
+        }));
 
-      navigate("/login");
+        // Redirect to OTP verification page
+        console.log('Redirecting to OTP verification page');
+        navigate("/verify-2fa-pending");
+      }
     } catch (err) {
       setError(err.response?.data?.message || "An error occurred during signup."); // Display error message
-      console.log(err);
+    } finally {
+      setLoading(false);
     }
-};
-
+  };
 
   return (
     <div
@@ -126,7 +123,6 @@ const Signup = () => {
         <h2 className="text-3xl font-bold text-center mb-6">Create Account</h2>
 
         {error && <p className="text-red-600 mb-4">{error}</p>}
-        {success && <p className="text-green-600 mb-4">{success}</p>}
 
         <form onSubmit={handleSubmit} encType="multipart/form-data">
           <div className="grid grid-cols-2 gap-4">
@@ -198,15 +194,14 @@ const Signup = () => {
           <div className="relative mt-4">
             <FontAwesomeIcon icon={faLock} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
             <input
-            type={showPassword ? 'text' : 'password'}
-            name="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)} // This should update the state
-            placeholder="Password"
-            className="w-full p-3 pl-10 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            required
-          />
-
+              type={showPassword ? 'text' : 'password'}
+              name="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Password"
+              className="w-full p-3 pl-10 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              required
+            />
             <span
               onClick={togglePasswordVisibility}
               className="absolute right-3 top-1/2 transform -translate-y-1/2 cursor-pointer text-gray-500"

@@ -8,7 +8,7 @@ const SettingProfile = () => {
   const [isPhoneEditable, setIsPhoneEditable] = useState(false);
 
   const [email, setEmail] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');         
   const [biodata, setBiodata] = useState('');
   const [username, setUsername] = useState('');
   const [firstName, setFirstName] = useState('');
@@ -22,8 +22,9 @@ const SettingProfile = () => {
 
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [error, setError] = useState('');
+
   const defaultProfilePictureUrl = 'https://www.imghost.net/ib/YgQep2KBICssXI1_1725211680.png';
 
   const validatePassword = (password) => {
@@ -148,27 +149,26 @@ const SettingProfile = () => {
     }
   };
 
-  
   const handleChangePassword = async (e) => {
     e.preventDefault();
-  
+
     if (!validatePassword(newPassword)) {
       setError("Password must be at least 9 characters long and include at least one number and one symbol.");
       return;
     }
-  
+
     if (newPassword !== confirmPassword) {
       setError("Passwords do not match");
       return;
     }
-  
+
     try {
       const storedUser = JSON.parse(localStorage.getItem('user'));
       if (!storedUser || !storedUser._id) {
         setError('User not logged in or user ID is missing.');
         return;
       }
-  
+
       const response = await axios.put(
         `http://localhost:5000/api/users/${storedUser._id}/password`,
         { newPassword },
@@ -178,7 +178,7 @@ const SettingProfile = () => {
           },
         }
       );
-  
+
       if (response.status === 200) {
         setSuccess("Password changed successfully!");
         setTimeout(() => {
@@ -195,7 +195,7 @@ const SettingProfile = () => {
       setError('An error occurred');
     }
   };
-  
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -308,22 +308,6 @@ const SettingProfile = () => {
             className="px-4 py-2 bg-red-800 text-white rounded hover:bg-red-900"
           >
             Change Password
-          </button>
-        </div>
-      </div>
-
-      <div className="mt-12">
-        <h4 className="text-2xl font-bold text-gray-900">
-          Two-Factor Authentication
-        </h4>
-        <p className="mt-2 text-gray-600">
-          Protect your account with an extra layer of security. Once configured,
-          you will be required to enter both your password and an authentication
-          code from your mobile phone in order to sign in.
-        </p>
-        <div className="mt-3 flex">
-          <button className="px-4 py-2 bg-red-800 text-white rounded hover:bg-red-900">
-            Enable Two-Factor Auth
           </button>
         </div>
       </div>
@@ -482,7 +466,7 @@ const SettingProfile = () => {
                 Cancel
               </button>
               <button
-                onClick={handleChangePassword} // Save the password changes
+                onClick={handleChangePassword}
                 className="ml-3 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
               >
                 Save

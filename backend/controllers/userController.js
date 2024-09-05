@@ -1,9 +1,18 @@
-  import User from '../models/userModels.js';
-
+import User from '../models/userModels.js';
 import bcrypt from 'bcrypt';
-import { generateToken } from '../utils/jwtUtils.js';
 import crypto from 'crypto';
-import nodemailer from 'nodemailer';
+import sendEmail from '../utils/sendEmail.js'; 
+import { generateRefreshToken, generateAccessToken } from '../utils/jwtUtils.js';
+
+
+const generateNumericOtp = (length) => {
+  let otp = '';
+  for (let i = 0; i < length; i++) {
+    otp += Math.floor(Math.random() * 10); // Generates a random number between 0 and 9
+  }
+  return otp;
+};
+
 
 
 
@@ -13,195 +22,93 @@ export const getUsers = async (req, res) => {
     const users = await User.find({});
     res.status(200).json(users);
   } catch (error) {
-    console.error("Error fetching users:", error);
     res.status(500).json({ message: 'Error fetching users', error: error.message });
   }
 };
 
-      // Create a new user
+// Create a new user
 
-      export const createUser = async (req, res) => {
-        const { firstName, lastName, username, email, phoneNumber, password, role, profilePicture } = req.body;
-        
-        try {
-            const userExists = await User.findOne({ email });
-            if (userExists) {
-                return res.status(400).json({ message: 'Email already exists' });
-            }
-    
-            
-            const salt = await bcrypt.genSalt(10);
-            const hashedPassword = await bcrypt.hash(password, salt);
-    
-          
-            const profilePictureData = profilePicture ? {
-                url: profilePicture,
-                publicId: 'default'  
-            } : {
-                url: 'https://www.imghost.net/ib/YgQep2KBICssXI1_1725211680.png', // Default image
-                publicId: 'default'
-            };
-    
-            const user = new User({
-                firstName,
-                lastName,
-                username,
-                phoneNumber,
-                email,
-                password: hashedPassword,
-                profilePicture: profilePictureData, 
-                role: role || 'User', 
-            });
-    
-            const createdUser = await user.save();
-            res.status(201).json(createdUser);
-        } catch (error) {
-            console.error("Error creating user:", error);
-            res.status(500).json({ message: 'Error creating user', error: error.message });
-        }
-    };
-    
-      
-  
+export const createUser = async (req, res) => {
+  const { firstName, lastName, username, email, phoneNumber, password, role, profilePicture } = req.body;
 
-    //Loginuser
-    export const loginUser = async (req, res) => {
-      const { email, password } = req.body;
+  try {
     
-      try {
-        // Check if the user exists
-        const user = await User.findOne({ email });
-    
-        if (!user) {
-          return res.status(400).json({ message: 'Invalid email or password' });
-        }
-    
-        // Check if the password matches
-        const isMatch = await bcrypt.compare(password, user.password);
-    
-        if (!isMatch) {
-          return res.status(400).json({ message: 'Invalid email or password' });
-        }
-    
-        // Generate a JWT token
-        const token = generateToken(user._id);
-    
-        // Return the user details along with the token
-        res.status(200).json({
-          _id: user._id,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          username: user.username,
-          email: user.email,
-          phoneNumber: user.phoneNumber,
-          profilePicture: user.profilePicture,
-          role: user.role,
-          token, // Returning the generated JWT token
-        });
-      } catch (error) {
-        res.status(500).json({ message: 'Server error', error });
-      }
-    };
-    
-  //Forgot-Password Function
-
-  export const forgotPassword = async (req, res) => {
-    const { email } = req.body;
-  
-    try {
-      const user = await User.findOne({ email });
-      if (!user) {
-        return res.status(404).json({ message: 'Email not found' });
-      }
-  
-      // Generate reset token
-      const resetToken = crypto.randomBytes(32).toString('hex');
-      const resetTokenExpire = Date.now() + 3600000; // Token valid for 1 hour
-  
-      user.resetPasswordToken = resetToken;
-      user.resetPasswordExpire = resetTokenExpire;
-      await user.save();
-  
-      // Send email with reset link
-      const resetUrl = `http://localhost:5173/reset-password/${resetToken}`;
-      const message = `You requested a password reset. Please make a PUT request to: \n\n ${resetUrl}`;
-  
-      await sendEmail({
-        email: user.email,
-        subject: 'Password Reset',
-        message,
-      });
-  
-      res.status(200).json({ message: 'Reset link sent to email' });
-    } catch (error) {
-      console.error('Error in forgotPassword:', error);
-      res.status(500).json({ message: 'Server error' });
+    const userExists = await User.findOne({ email });
+    if (userExists) {
+      return res.status(400).json({ message: 'Email already exists' });
     }
-  };
-  
-  // Helper function to send email
-  const sendEmail = async (options) => {
-    const transporter = nodemailer.createTransport({
-      service: 'Gmail',
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
+
+    // Check if the username already exists
+    const usernameExists = await User.findOne({ username });
+    if (usernameExists) {
+      return res.status(400).json({ message: 'Username already exists' });
+    }
+
+    // Hash the password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    // Set profile picture or default
+    const profilePictureData = profilePicture ? {
+      url: profilePicture,
+      publicId: 'default'
+    } : {
+      url: 'https://www.imghost.net/ib/YgQep2KBICssXI1_1725211680.png',
+      publicId: 'default'
+    };
+
+    // Create new user instance
+    const user = new User({
+      firstName,
+      lastName,
+      username,
+      phoneNumber,
+      email,
+      password: hashedPassword,
+      profilePicture: profilePictureData,
+      role: role || 'User',
     });
-  
-    const mailOptions = {
-      from: 'eunivate@gmail.com',
-      to: options.email,
-      subject: options.subject,
-      text: options.message,
-    };
-  
-    await transporter.sendMail(mailOptions);
-  };
 
-  //Reset-Password
-  export const resetPassword = async (req, res) => {
-    const { token } = req.params;
-    const { password } = req.body;
-  
-    try {
-      // Find the user by the reset token and ensure the token has not expired
-      const user = await User.findOne({
-        resetPasswordToken: token,
-        resetPasswordExpire: { $gt: Date.now() }
-      });
-  
-      if (!user) {
-        return res.status(400).json({ message: 'Invalid or expired token' });
-      }
-  
-      // Hash the new password
-      const salt = await bcrypt.genSalt(10);
-      user.password = await bcrypt.hash(password, salt);
-  
-      // Remove the reset token and expiration since it's no longer needed
-      user.resetPasswordToken = undefined;
-      user.resetPasswordExpire = undefined;
-  
-      // Save the updated user object
-      await user.save();
-  
-      res.status(200).json({ message: 'Password reset successful!' });
-    } catch (error) {
-      console.error('Error resetting password:', error);
-      res.status(500).json({ message: 'Server error' });
-    }
-  };
-  
 
-// Test connection
-export const testConnection = (req, res) => {
-  res.status(200).json({ message: 'Connection successful!' });
+    // Generate an OTP for 2FA
+    const twoFactorToken = generateNumericOtp(4); 
+    user.twoFactorToken = twoFactorToken;
+    user.twoFactorTokenExpire = Date.now() + 10 * 60 * 1000; 
+    
+    // Save the user to the database
+    const createdUser = await user.save();
+
+    const message = `Your OTP code is ${twoFactorToken}`;
+    await sendEmail({
+      email: createdUser.email,
+      subject: 'Account Verification OTP',
+      message,
+    });
+
+
+    const accessToken = generateAccessToken(createdUser._id);
+    const refreshToken = generateRefreshToken(createdUser._id);
+
+    createdUser.refreshToken.push(refreshToken);
+    await createdUser.save();
+
+    // Return user details along with tokens
+    res.status(201).json({
+      _id: createdUser._id,
+      firstName: createdUser.firstName,
+      lastName: createdUser.lastName,
+      username: createdUser.username,
+      email: createdUser.email,
+      phoneNumber: createdUser.phoneNumber,
+      profilePicture: createdUser.profilePicture,
+      role: createdUser.role,
+      twoFactorToken: createdUser.twoFactorToken,
+      accessToken,
+      refreshToken
+    });
+  } catch (error) {
+    console.error('Error creating user:', error.message); 
+    res.status(500).json({ message: 'Error creating user', error: error.message });
+    
+  }
 };
-
-
-
-
-
-
-

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Loginback } from '../../../constants/assets';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -10,10 +11,10 @@ const Login = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const [savedCredentials, setSavedCredentials] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [loading, setloading] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Load saved emails from localStorage
     const savedCreds = JSON.parse(localStorage.getItem('savedCredentials')) || [];
     setSavedCredentials(savedCreds);
   }, []);
@@ -23,67 +24,80 @@ const Login = () => {
   };
 
   const handleLogin = async () => {
+    setloading(true);
     try {
       const response = await axios.post('http://localhost:5000/api/users/login', {
-        email: email,
-        password: password,
+        email,
+        password,
       });
-  
+
       const data = response.data;
-      console.log(data);
-  
+
       if (response.status === 200) {
-        const { _id, firstName, lastName, email, role, username, phoneNumber, profilePicture, token } = data;
-  
-        localStorage.setItem('user', JSON.stringify({
-          _id,
-          firstName,
-          lastName,
-          username,
-          email,
-          phoneNumber,
-          profilePicture,
-          token,
-          role,
-        }));
-  
-        if (rememberMe) {
-          const newCreds = { email, password };
-          const updatedCreds = [...savedCredentials.filter((cred) => cred.email !== email), newCreds];
-          localStorage.setItem('savedCredentials', JSON.stringify(updatedCreds));
-        }
-  
-        const roleLowerCase = role.toLowerCase(); 
-        if (roleLowerCase === 'superadmin') {
-          navigate('/superadmin/dashboard');
-        } else if (roleLowerCase === 'admin') {
-          navigate('/admin');
-        } else if (roleLowerCase === 'collaborator') {
-          navigate('/collaborator-dashboard');
-        } else if (roleLowerCase === 'user') {
-          navigate('/');
+        // Check if OTP is required
+        if (data.twoFactorEnabled) {
+          // Store user information locally without tokens
+          localStorage.setItem('user', JSON.stringify({
+            userId: data._id,
+            email: data.email,
+          }));
+
+          // Redirect to OTP verification page
+          navigate('/verify-2fa-pending');
         } else {
-          console.error('Unknown role:', role);
+          // Store user information in local storage including tokens
+          const { _id, firstName, lastName, email, role, username, phoneNumber, profilePicture, accessToken, refreshToken, twoFactorToken } = data;
+
+          localStorage.setItem('user', JSON.stringify({
+            _id,
+            firstName,
+            lastName,
+            username,
+            email,
+            phoneNumber,
+            profilePicture,
+            role,
+            twoFactorToken,
+            accessToken,
+            refreshToken,
+          }));
+
+          // Handle "Remember Me" functionality
+          if (rememberMe) {
+            const newCreds = { email, password };
+            const updatedCreds = [...savedCredentials.filter((cred) => cred.email !== email), newCreds];
+            localStorage.setItem('savedCredentials', JSON.stringify(updatedCreds));
+          }
+
+          // Redirect based on user role
+          const roleLowerCase = role.toLowerCase(); 
+          if (roleLowerCase === 'superadmin') {
+            navigate('/superadmin/dashboard');
+          } else if (roleLowerCase === 'admin') {
+            navigate('/admin');
+          } else if (roleLowerCase === 'collaborator') {
+            navigate('/collaborator-dashboard');
+          } else if (roleLowerCase === 'user') {
+            navigate('/');
+          } else {
+            console.error('Unknown role:', role);
+          }
         }
-      } else {
-        console.error('Login failed:', data.message);
-        setError(data.message);
       }
     } catch (error) {
-      
+      setloading(false);
       if (error.response && error.response.status === 400) {
-      setError('Invalid email or password.');
-    } else if (error.response && error.response.status === 404) {
-      setError('Email not found.');
-    } else {
-      setError('An error occurred while trying to log in. Please try again later.');
+        setError('Invalid email or password.');
+      } else if (error.response && error.response.status === 404) {
+        setError('Email not found.');
+      } else {
+        setError('An error occurred while trying to log in. Please try again later.');
+      }
+      console.error('Error logging in:', error);
     }
-    console.error('Error logging in:', error);
-  }
-};
-  
-  
+  };
 
+  
   const handleEmailFocus = () => {
     setShowSuggestions(true);
   };
@@ -109,22 +123,21 @@ const Login = () => {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             onFocus={handleEmailFocus}
-            onBlur={() => setTimeout(() => setShowSuggestions(false), 200)} // Delay to allow click on suggestion
+            onBlur={() => setTimeout(() => setShowSuggestions(false), 200)} 
           />
          {showSuggestions && (
-  <ul className="absolute bg-white rounded-md mt-1 w-full max-h-40 overflow-y-auto z-10 shadow-md">
-    {savedCredentials.map((cred, index) => (
-      <li
-        key={index}
-        className="p-2 cursor-pointer hover:bg-gray-100"
-        onClick={() => handleEmailSelect(cred.email)}
-      >
-        {cred.email}
-      </li>
-    ))}
-  </ul>
-)}
-
+          <ul className="absolute bg-white rounded-md mt-1 w-full max-h-40 overflow-y-auto z-10 shadow-md">
+            {savedCredentials.map((cred, index) => (
+              <li
+                key={index}
+                className="p-2 cursor-pointer hover:bg-gray-100"
+                onClick={() => handleEmailSelect(cred.email)}
+              >
+                {cred.email}
+              </li>
+            ))}
+          </ul>
+         )}
         </div>
         <div className="mb-4 relative">
           <label className="block text-gray-700 text-sm font-semibold mb-2">Password</label>
@@ -152,9 +165,14 @@ const Login = () => {
           </div>
           <Link to="/forgot" className="text-sm text-red-600 hover:underline">Forgot Password?</Link>
         </div>
-        <button className="w-full bg-yellow-500 text-white p-3 rounded-lg shadow hover:bg-yellow-600 transition duration-300" onClick={handleLogin}>
-          Login
-        </button>
+        <button
+            type="submit"
+            className="w-full bg-yellow-500 text-white p-3 rounded-lg shadow hover:bg-yellow-600 transition duration-300 mt-6"
+            onClick={handleLogin}
+            disabled={loading}
+          >
+            {loading ? 'Logging in...' : 'Login'}
+          </button>
         <div className="text-center mt-6 text-gray-700">
           <p>
             Don’t have an account? <Link to="/signup" className="text-red-600 hover:underline">SIGN UP</Link>
