@@ -1,4 +1,5 @@
 import Message from '../models/chatMessageModel.js';
+import { uploadChatFileToCloudinary } from '../config/cloudnaryConfig.js';
 
 // Get all messages
 export const getMessages = async (req, res) => {
@@ -14,19 +15,26 @@ export const getMessages = async (req, res) => {
 // Send a new message
 export const sendMessage = async (req, res) => {
   try {
-    const { content, sender, file, time, replyTo } = req.body;
+    const { content, sender, time, replyTo } = req.body;
+    let file = req.file; // File is attached through the request
+    let fileData = null;
 
+    // Upload file to Cloudinary if it exists
+    if (file) {
+      const uploadResult = await uploadChatFileToCloudinary(file.path);
+      fileData = {
+        name: file.originalname,
+        type: file.mimetype,
+        url: uploadResult.url,
+      };
+    }
 
     const newMessage = new Message({
       content,
       sender,
-      file: {
-        name: file?.name || '',
-        type: file?.type || '',
-        url: file?.url || '',
-      },
+      file: fileData, // Attach the uploaded file data
       time,
-      replyTo: replyTo || null, // Assign the replyTo message ID if provided
+      replyTo: replyTo || null,
     });
 
     await newMessage.save();

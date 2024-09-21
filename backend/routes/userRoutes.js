@@ -1,7 +1,7 @@
 import express from 'express';
 
   import { createQuotation, confirmQuotationEmail, checkVerificationStatus } from '../controllers/quotationController.js'
-  import upload from '../middlewares/multerMiddleware.js';
+  import { upload } from '../middlewares/multerMiddleware.js';
   import quotationTokenModel from '../models/quotationTokenModel.js';
   import Quotation from '../models/quotationModel.js';
 

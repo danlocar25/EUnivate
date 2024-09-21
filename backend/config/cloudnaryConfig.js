@@ -22,5 +22,19 @@ const uploadToCloudinary = async (path, folder = 'EunivateAssets') => {
   }
 };
 
-export { cloudinary, uploadToCloudinary };
+// Upload for ChatFiles
+const uploadChatFileToCloudinary = async (path, folder = 'ChatFiles') => {
+  try {
+    const result = await cloudinary.uploader.upload(path, { folder });
+    return {
+      url: result.secure_url,
+      publicId: result.public_id,
+    };
+  } catch (err) {
+    console.error("Cloudinary Upload Error:", err);
+    throw err;
+  }
+};
+
+export { cloudinary, uploadToCloudinary, uploadChatFileToCloudinary };
 
