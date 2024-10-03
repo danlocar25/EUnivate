@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEye, faEyeSlash } from '@fortawesome/free-solid-svg-icons';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
 
 const SettingProfile = () => {
   const [isEmailEditable, setIsEmailEditable] = useState(false);
@@ -9,7 +12,7 @@ const SettingProfile = () => {
   const [isBiodataEditable, setIsBiodataEditable] = useState(false);
 
   const [email, setEmail] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');         
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [biodata, setBiodata] = useState('');
   const [username, setUsername] = useState('');
   const [firstName, setFirstName] = useState('');
@@ -33,13 +36,14 @@ const SettingProfile = () => {
     return passwordRegex.test(password);
   };
 
+
   useEffect(() => {
     const storedUser = JSON.parse(localStorage.getItem('user'));
     const storedBiodata = localStorage.getItem('biodata');
     if (storedUser) {
       setEmail(storedUser.email || '');
       setPhoneNumber(storedUser.phoneNumber || '');
-      setBiodata(storedBiodata || ''); 
+      setBiodata(storedBiodata || '');
       setUsername(storedUser.username || '');
       setFirstName(storedUser.firstName || '');
       setLastName(storedUser.lastName || '');
@@ -58,16 +62,15 @@ const SettingProfile = () => {
   const handleEditClick = async (field) => {
     if (field === 'email') {
       setIsEmailEditable((prevState) => !prevState);
-      if (isEmailEditable) await handleSaveProfile(false); // Modal should not close
+      if (isEmailEditable) await handleSaveProfile(false);
     } else if (field === 'phone') {
       setIsPhoneEditable((prevState) => !prevState);
-      if (isPhoneEditable) await handleSaveProfile(false); // Modal should not close
+      if (isPhoneEditable) await handleSaveProfile(false);
     } else if (field === 'biodata') {
       setIsBiodataEditable((prevState) => !prevState);
-      if (isBiodataEditable) await handleSaveProfile(false); // Modal should not close
+      if (isBiodataEditable) await handleSaveProfile(false);
     }
   };
-
   const toggleEditProfileModal = () => {
     setShowEditProfileModal(!showEditProfileModal);
   };
@@ -93,14 +96,14 @@ const SettingProfile = () => {
           'https://api.cloudinary.com/v1_1/dzxzc7kwb/image/upload',
           formData
         );
-        return response.data.url; // This is the URL of the uploaded image
+        return response.data.url;
       } catch (error) {
         console.error('Error uploading image:', error);
         throw error;
       }
     };
 
-    const storedUser = JSON.parse(localStorage.getItem('user')); // Retrieve the stored user data
+    const storedUser = JSON.parse(localStorage.getItem('user'));
 
     if (!storedUser || !storedUser._id) {
       console.error('User is not logged in or user ID is missing.');
@@ -127,7 +130,7 @@ const SettingProfile = () => {
       phoneNumber,
       username,
       profilePicture: profilePictureUrl,
-      role: biodata, // Add the biodata (role) to be updated
+      role: biodata,
     };
 
     try {
@@ -136,7 +139,7 @@ const SettingProfile = () => {
         updatedUser,
         {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`, // Include the token in the request
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
           },
         }
       );
@@ -146,47 +149,69 @@ const SettingProfile = () => {
       setIsPhoneEditable(false);
       setIsBiodataEditable(false);
 
+      // Show success toast notification
+      toast.success('Successfully changed your profile!', {
+        position: 'top-right',
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        closeButton: <button>Close</button>
+      });
+
       // Conditionally close the modal based on the parameter
       if (shouldCloseModal) {
         toggleEditProfileModal();
       }
     } catch (error) {
       console.error('Error updating profile', error);
+      toast.error('Error updating profile');
     }
   };
 
   const handleChangePassword = async (e) => {
     e.preventDefault();
-
+  
     if (!validatePassword(newPassword)) {
       setError("Password must be at least 9 characters long and include at least one number and one symbol.");
       return;
     }
-
+  
     if (newPassword !== confirmPassword) {
       setError("Passwords do not match");
       return;
     }
-
+  
     try {
       const storedUser = JSON.parse(localStorage.getItem('user'));
       if (!storedUser || !storedUser._id) {
         setError('User not logged in or user ID is missing.');
         return;
       }
-
+  
       const response = await axios.put(
         `http://localhost:5000/api/users/${storedUser._id}/password`,
         { newPassword },
         {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
+            Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
           },
         }
       );
-
+  
       if (response.status === 200) {
-        setSuccess("Password changed successfully!");
+        // Show success toast notification
+        toast.success("Password changed successfully!", {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        });
+  
         setTimeout(() => {
           setShowChangePasswordModal(false);
           setNewPassword('');
@@ -201,30 +226,36 @@ const SettingProfile = () => {
       setError('An error occurred');
     }
   };
+  
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center">
-          <img
-            src={profilePicture || defaultProfilePictureUrl}
-            alt="Profile"
-            className="w-20 h-20 rounded-full mr-4"
-          />
-          <div className="flex flex-col">
-            <div className="text-lg font-medium">
-              {firstName} {lastName}
-            </div>
-            <p className="text-sm text-gray-600 mt-1">@{username}</p>
-          </div>
+      <ToastContainer />
+  <div className="flex flex-col sm:flex-row items-center justify-between">
+    <div className="flex flex-col sm:flex-row items-center sm:items-start">
+      <img
+        src={profilePicture || defaultProfilePictureUrl}
+        alt="Profile"
+        className="w-24 h-24 sm:w-20 sm:h-20 rounded-full mb-4 sm:mb-0 sm:mr-4"
+      />
+      <div className="text-center sm:text-left mt-3">
+        <div className="text-lg font-medium">
+          {firstName} {lastName}
         </div>
-        <button
-          onClick={toggleEditProfileModal}
-          className="px-4 py-2 bg-red-800 text-white rounded hover:bg-red-900"
-        >
-          Edit User Profile
-        </button>
+        <p className="text-sm text-gray-600 mt-1">@{username}</p>
+
       </div>
+    </div>
+
+    {/* Button stays in original position on website, moves below content on mobile */}
+    <button
+      onClick={toggleEditProfileModal}
+      className="px-3 py-1 sm:px-4 sm:py-2 bg-red-800 text-white rounded hover:bg-red-900 text-sm sm:text-base mt-4 sm:mt-0 w-full h-10 sm:w-auto" // Button on mobile takes full width
+    >
+      Edit User Profile
+    </button>
+  </div>
+ 
 
       <div className="p-4 bg-gray-100 rounded-lg shadow-md">
         <div className="space-y-4">

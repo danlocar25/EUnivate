@@ -14,7 +14,7 @@ const Navbar = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const defaultProfilePicture = 'https://www.imghost.net/ib/YgQep2KBICssXI1_1725211680.png'; 
+    const defaultProfilePicture = 'https://res.cloudinary.com/dzxzc7kwb/image/upload/v1725974053/DefaultProfile/qgtsyl571c1neuls9evd.png'; 
     const user = JSON.parse(localStorage.getItem('user'));
     if (user) {
       setUserName(`${user.firstName} ${user.lastName}`);
@@ -34,6 +34,7 @@ const Navbar = () => {
       title: "Products",
       hasDropdown: true,
       subLinks: [
+        { id: "products", title: "Products", path: "/product" },
         { id: "showcases", title: "Showcases", path: "/showcases" },
         {
           id: "quotation",
@@ -50,6 +51,7 @@ const Navbar = () => {
       title: "Services",
       hasDropdown: true,
       subLinks: [
+        { id: "services", title: "Services", path: "/services" },
         { id: "webinars", title: "Webinars", path: "/webinar" },
         { id: "events", title: "Events", path: "/events" },
         { id: "challenges", title: "Challenges", path: "/challenges" },

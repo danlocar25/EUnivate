@@ -13,7 +13,7 @@ cloudinary.config({
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
-    folder: 'EunivateAssets', // The folder in Cloudinary where files will be stored
+    folder: 'EunivateAssets', 
     allowedFormats: ['jpg', 'png'],
   },
 });

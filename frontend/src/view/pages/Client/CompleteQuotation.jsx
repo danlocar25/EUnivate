@@ -1,6 +1,7 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router-dom'; // Import useNavigate
 import { Step4 } from '../../../constants/assets';
+
 
 const CompleteQuotation = () => {
     return (
@@ -18,12 +19,12 @@ const CompleteQuotation = () => {
                     </p>
                 </div>
                 <div className="mt-8 flex justify-center">
-                    <Link
-                        to="/"
-                        className="px-6 py-3 rounded-lg shadow bg-yellow-500 text-white hover:bg-yellow-600 transition duration-300"
-                    >
-                        Complete
-                    </Link>
+                <Link
+                    to="/"
+                    className="px-6 py-3 rounded-lg shadow bg-yellow-500 text-white hover:bg-yellow-600 transition duration-300"
+                >
+                    Complete
+                </Link>
                 </div>
             </div>
         </div>

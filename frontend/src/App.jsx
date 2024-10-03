@@ -23,8 +23,8 @@ import CTA from "./view/components/Client/LastSection/CTA.jsx";
 import MainPage from './view/pages/Client/MainPage.jsx';
 import CompleteQuotation from './view/pages/Client/CompleteQuotation.jsx';
 import VerifyEmailQuotationSent from './view/pages/Client/VerifyEmailQuotationSent.jsx';
-
-
+import Servicespage from './view/pages/Client/Servicespage.jsx';
+import Productpage from './view/pages/Client/Productpage.jsx';
 
 // Hooks (for authentication and role-based routing)
 import Auth from './view/hooks/Auth.jsx';
@@ -32,6 +32,8 @@ import SuperAdminRoute from './view/hooks/SuperadminAuth.jsx';
 import ProjectmanagementAuth from './view/hooks/AuthProjectmanagement.jsx';
 import Verify2FAPending from './view/hooks/Verify2faPending.jsx';
 import AdminAuth from './view/hooks/AdminAuth.jsx';
+import MemberAuth from './view/hooks/MembersAuth.jsx'; 
+
 //Admin
 import AdminDashboard from './view/pages/Admin/AdminDashboard.jsx';
 import AdminAddProduct from './view/components/Admin/AdminAddProduct.jsx';
@@ -52,6 +54,11 @@ import Activity from './view/pages/SuperAdmin/Activity';
 import Settings from './view/pages/SuperAdmin/Settings';
 import ProjectDetails from './view/pages/SuperAdmin/ProjectDetails'; 
 
+//Member
+
+import Member from "./view/pages/Members/Member.jsx"; 
+import ProjMem from "./view/pages/Members/ProjectMem.jsx"; 
+import TaskMem from "./view/pages/Members/TaskMem.jsx"; 
 
 /* Global CSS */
 import './index.css';
@@ -75,6 +82,8 @@ const App = () => {
         <Route path="/quotation" element={<Auth><Quotation /></Auth>}/>
         <Route path="/showcases" element={<Showcases />} />
         <Route path="/challenges" element={<Challenges />} />
+        <Route path="/services" element={<Servicespage />} />
+        <Route path="/product" element={<Productpage />} />
         <Route path="/project" element={<ProjectmanagementAuth><ProjectManagement /></ProjectmanagementAuth>} />
         <Route path="/webinar" element={<Webinars />} />
         <Route path="/login" element={<Login />} />
@@ -89,7 +98,7 @@ const App = () => {
         {/* <Route path="/verify-2fa-pending" element={<PrivateOTP><Verify2FAPending /></PrivateOTP>} /> */}
 
         {/* Admin Routes */}
-        <Route path="/admin" element={<AdminAuth><AdminDashboard /></AdminAuth>} />
+      <Route path="/admin" element={<AdminAuth><AdminDashboard /></AdminAuth>} />
       <Route path="/admin-addproducts" element={<AdminAuth><AdminAddProduct /></AdminAuth>} />
       <Route path="/products" element={<AdminAuth><Product /></AdminAuth>} />
       <Route path="/admin-addprojects" element={<AdminAuth><AdminAddProject /></AdminAuth>} />
@@ -98,8 +107,24 @@ const App = () => {
       <Route path="/events-admin" element={<AdminAuth><EventsAdmin /></AdminAuth>} />
         
 
-
-
+{/* Members */}
+<Route
+  path="/member/*"
+  element={
+    <MemberAuth>
+      <Member />
+    </MemberAuth>
+  }
+>
+  {/* Default route for "/member" */}
+  <Route index element={<ProjMem />} />
+  
+  {/* Other routes */}
+  <Route path="projectmem" element={<ProjMem />} />
+  <Route path="taskmem" element={<TaskMem />} />
+  <Route path="messages" element={<Messages />} />
+  <Route path="settings" element={<Settings />} />
+</Route>
 
         {/*
               <Route path="/admin-container" element={<AdminContainer />} />

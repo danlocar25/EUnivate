@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css'; // Import the styles
 
 const Verify2FAPending = () => {
   const [otp, setOtp] = useState(['', '', '', '']);
@@ -27,114 +29,125 @@ const Verify2FAPending = () => {
       setOtp(newOtp);
 
       if (value && index < otp.length - 1) {
-        // Move to the next input if a digit is entered
         document.getElementById(`otp-input-${index + 1}`).focus();
       } else if (!value && index > 0) {
-        // Move to the previous input if the value is cleared
         document.getElementById(`otp-input-${index - 1}`).focus();
       }
     }
   };
 
-      const handleVerifyOtp = async () => {
-        setLoading(true);
-        const userId = storedUser.userId || storedUser._id;
+  const handleVerifyOtp = async () => {
+    setLoading(true);
+    const userId = storedUser.userId || storedUser._id;
 
-        if (!userId) {
-          setError('User data not found. Please log in again.');
-          return;
+    if (!userId) {
+      setError('User data not found. Please log in again.');
+      return;
+    }
+
+    const otpCode = otp.join('');
+
+    if (otpCode.length < 4) {
+      setError('Please enter the complete OTP.');
+      return;
+    }
+
+    try {
+      const storedUser = JSON.parse(localStorage.getItem('user'));
+      const accessToken = storedUser?.accessToken;
+
+      if (!accessToken) {
+        setError('Access token not found. Please log in again.');
+        return;
+      }
+
+      const response = await axios.post(
+        'http://localhost:5000/api/users/verify-otp',
+        { userId, otp: otpCode },
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
         }
-      
-        const otpCode = otp.join('');
-      
-        if (otpCode.length < 4) {
-          setError('Please enter the complete OTP.');
-          return;
-        }
-      
-        try {
-          const response = await axios.post('http://localhost:5000/api/users/verify-otp', {
-            userId,
-            otp: otpCode,
-          });
-      
-          if (response.status === 200) {
-            setSuccess('OTP verified successfully!');
-      
-            // Store access token and refresh token in local storage
-            const {
-              _id,
-              firstName,
-              lastName,
-              email,
-              role,
-              username,
-              phoneNumber,
-              profilePicture,
-              accessToken,
-              refreshToken,
-              twoFactorToken,
-            } = response.data;
-      
-            localStorage.setItem('user', JSON.stringify({
-              _id,
-              firstName,
-              lastName,
-              username,
-              email,
-              phoneNumber,
-              profilePicture,
-              role,
-              accessToken,
-              refreshToken,
-              twoFactorToken,
-            }));
-      
-            // Redirect based on user role after 2 seconds
-            setTimeout(() => {
-              if (role) {
-                const roleLowerCase = role.toLowerCase();
-                if (roleLowerCase === 'superadmin') {
-                  navigate('/superadmin/dashboard');
-                } else if (roleLowerCase === 'admin') {
-                  navigate('/admin');
-                } else if (roleLowerCase === 'collaborator') {
-                  navigate('/collaborator-dashboard');
-                } else if (roleLowerCase === 'ser') {
-                  navigate('/');
-                } else {
-                  console.error('Unknown role:', role);
-                  navigate('/');
-                }
-              } else {
-                console.error('Role is not defined.');
-                navigate('/login'); // Redirect to login if role is undefined
-              }
-            }, 2000);
+      );
+
+      if (response.status === 200) {
+        setSuccess('OTP verified successfully!');
+        toast.success('Successfully logged in!');
+
+        const {
+          _id,
+          firstName,
+          lastName,
+          email,
+          role,
+          username,
+          phoneNumber,
+          profilePicture,
+          accessToken: newAccessToken,
+          twoFactorToken,
+        } = response.data;
+
+        localStorage.setItem('user', JSON.stringify({
+          _id,
+          firstName,
+          lastName,
+          username,
+          email,
+          phoneNumber,
+          profilePicture,
+          role,
+          accessToken: newAccessToken,
+          twoFactorToken,
+        }));
+
+        setTimeout(() => {
+          if (role) {
+            const roleLowerCase = role.toLowerCase();
+            if (roleLowerCase === 'superadmin') {
+              navigate('/superadmin/dashboard');
+            } else if (roleLowerCase === 'admin') {
+              navigate('/admin');
+            } else if (roleLowerCase === 'members') {
+              navigate('/member');
+            } else if (roleLowerCase === 'User') {
+              navigate('/');
+            } else {
+              console.error('Unknown role:', role);
+              navigate('/');
+            }
           } else {
-            setError('Invalid OTP. Please try again.');
+            console.error('Role is not defined.');
+            navigate('/login');
           }
-        } catch (err) {
-          setLoading(false);
-          setError('Failed to verify OTP. Please try again later.');
-        }
-      };
+        }, 2000);
+      } else {
+        setError('Invalid OTP. Please try again.');
+      }
+    } catch (err) {
+      setLoading(false);
+      setError('Failed to verify OTP. Please try again later.');
+    }
+  };
 
   const handleResendOtp = async () => {
     if (!storedUser) {
       setError('User data not found. Please log in again.');
       return;
     }
-
+  
     try {
       await axios.post('http://localhost:5000/api/users/resend-otp', {
         email: storedUser.email,
       });
       setSuccess('OTP resent successfully!');
+      toast.success('OTP resent successfully!');
     } catch (err) {
       setError('Failed to resend OTP. Please try again later.');
+      toast.error('Failed to resend OTP.');
     }
   };
+  
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100">
@@ -164,7 +177,7 @@ const Verify2FAPending = () => {
         <button
           onClick={handleVerifyOtp}
           className="w-full bg-red-800 text-white py-2 rounded-lg shadow hover:bg-red-600 transition duration-300"
-          disabled={loading} 
+          disabled={loading}
         >
           {loading ? 'Confirming...' : 'Confirm'}
         </button>
@@ -185,6 +198,7 @@ const Verify2FAPending = () => {
           </button>
         </div>
       </div>
+      <ToastContainer />
     </div>
   );
 };

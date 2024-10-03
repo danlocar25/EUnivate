@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Loginback } from '../../../constants/assets';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import LoadingBox from '../../pages/SuperAdmin/Loading Style/LoadingBox/LoadingBox'; // Import the LoadingBox component
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -11,7 +12,7 @@ const Login = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const [savedCredentials, setSavedCredentials] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [loading, setloading] = useState(false);
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -24,7 +25,7 @@ const Login = () => {
   };
 
   const handleLogin = async () => {
-    setloading(true);
+    setLoading(true);
     try {
       const response = await axios.post('http://localhost:5000/api/users/login', {
         email,
@@ -34,19 +35,15 @@ const Login = () => {
       const data = response.data;
 
       if (response.status === 200) {
-        // Check if OTP is required
         if (data.twoFactorEnabled) {
-          // Store user information locally without tokens
           localStorage.setItem('user', JSON.stringify({
             userId: data._id,
             email: data.email,
+            accessToken: data.accessToken, 
           }));
-
-          // Redirect to OTP verification page
           navigate('/verify-2fa-pending');
         } else {
-          // Store user information in local storage including tokens
-          const { _id, firstName, lastName, email, role, username, phoneNumber, profilePicture, accessToken, refreshToken, twoFactorToken } = data;
+          const { _id, firstName, lastName, email, role, username, phoneNumber, profilePicture, accessToken, twoFactorToken } = data;
 
           localStorage.setItem('user', JSON.stringify({
             _id,
@@ -59,24 +56,21 @@ const Login = () => {
             role,
             twoFactorToken,
             accessToken,
-            refreshToken,
           }));
 
-          // Handle "Remember Me" functionality
           if (rememberMe) {
             const newCreds = { email, password };
             const updatedCreds = [...savedCredentials.filter((cred) => cred.email !== email), newCreds];
             localStorage.setItem('savedCredentials', JSON.stringify(updatedCreds));
           }
 
-          // Redirect based on user role
           const roleLowerCase = role.toLowerCase(); 
           if (roleLowerCase === 'superadmin') {
             navigate('/superadmin/dashboard');
           } else if (roleLowerCase === 'admin') {
             navigate('/admin');
-          } else if (roleLowerCase === 'collaborator') {
-            navigate('/collaborator-dashboard');
+          } else if (roleLowerCase === 'member') {
+            navigate('/member-dashboard');
           } else if (roleLowerCase === 'user') {
             navigate('/');
           } else {
@@ -85,7 +79,7 @@ const Login = () => {
         }
       }
     } catch (error) {
-      setloading(false);
+      setLoading(false);
       if (error.response && error.response.status === 400) {
         setError('Invalid email or password.');
       } else if (error.response && error.response.status === 404) {
@@ -97,7 +91,6 @@ const Login = () => {
     }
   };
 
-  
   const handleEmailFocus = () => {
     setShowSuggestions(true);
   };
@@ -111,7 +104,13 @@ const Login = () => {
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-cover bg-no-repeat" style={{ backgroundImage: `url(${Loginback})` }}>
-      <div className="bg-white p-8 rounded-xl shadow-lg max-w-md w-full">
+      <div className="relative bg-white p-8 rounded-xl shadow-lg max-w-md w-full">
+      {loading && (
+  <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 z-10">
+    <LoadingBox />
+  </div>
+)}
+
         <h2 className="text-3xl font-bold text-center mb-6">Log In</h2>
         {error && <p className="text-red-600 mb-4">{error}</p>}
         <div className="mb-4 relative">
@@ -125,19 +124,19 @@ const Login = () => {
             onFocus={handleEmailFocus}
             onBlur={() => setTimeout(() => setShowSuggestions(false), 200)} 
           />
-         {showSuggestions && (
-          <ul className="absolute bg-white rounded-md mt-1 w-full max-h-40 overflow-y-auto z-10 shadow-md">
-            {savedCredentials.map((cred, index) => (
-              <li
-                key={index}
-                className="p-2 cursor-pointer hover:bg-gray-100"
-                onClick={() => handleEmailSelect(cred.email)}
-              >
-                {cred.email}
-              </li>
-            ))}
-          </ul>
-         )}
+          {showSuggestions && (
+            <ul className="absolute bg-white rounded-md mt-1 w-full max-h-40 overflow-y-auto z-10 shadow-md">
+              {savedCredentials.map((cred, index) => (
+                <li
+                  key={index}
+                  className="p-2 cursor-pointer hover:bg-gray-100"
+                  onClick={() => handleEmailSelect(cred.email)}
+                >
+                  {cred.email}
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
         <div className="mb-4 relative">
           <label className="block text-gray-700 text-sm font-semibold mb-2">Password</label>
@@ -166,13 +165,13 @@ const Login = () => {
           <Link to="/forgot" className="text-sm text-red-600 hover:underline">Forgot Password?</Link>
         </div>
         <button
-            type="submit"
-            className="w-full bg-yellow-500 text-white p-3 rounded-lg shadow hover:bg-yellow-600 transition duration-300 mt-6"
-            onClick={handleLogin}
-            disabled={loading}
-          >
-            {loading ? 'Logging in...' : 'Login'}
-          </button>
+          type="submit"
+          className="w-full bg-yellow-500 text-white p-3 rounded-lg shadow hover:bg-yellow-600 transition duration-300 mt-6"
+          onClick={handleLogin}
+          disabled={loading}
+        >
+          {loading ? 'Logging in...' : 'Login'}
+        </button>
         <div className="text-center mt-6 text-gray-700">
           <p>
             Don’t have an account? <Link to="/signup" className="text-red-600 hover:underline">SIGN UP</Link>

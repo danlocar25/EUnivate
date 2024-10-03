@@ -1,5 +1,5 @@
 import jwt from 'jsonwebtoken';
-import User from '../models/userModels.js';
+import User from '../models/Client/userModels.js';
 
 // Middleware to protect routes and verify token
 export const protect = async (req, res, next) => {
@@ -17,14 +17,18 @@ export const protect = async (req, res, next) => {
       }
 
       next();
-    } catch (error) {
+  } catch (error) {
       console.error('Token verification failed:', error.message);
-      return res.status(401).json({ message: 'Not authorized, token failed', error: error.message });
+      return res.status(401).json({
+        message: 'Not authorized, token failed',
+        error: error.message
+      });
     }
-  }
-
-  if (!token) {
-    return res.status(401).json({ message: 'Not authorized, no token' });
+  } else {
+    // No token provided
+    return res.status(401).json({
+      message: 'Not authorized, no token'
+    });
   }
 };
 

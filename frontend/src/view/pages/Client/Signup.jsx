@@ -63,8 +63,10 @@ const Signup = () => {
 
     let profilePictureUrl = profilePicture;
 
-    if (profilePicture) {
-      try {
+    if (!profilePicture) {
+      profilePictureUrl = "https://res.cloudinary.com/dzxzc7kwb/image/upload/v1725974053/DefaultProfile/qgtsyl571c1neuls9evd.png";
+    } else {
+       try {
         profilePictureUrl = await uploadImageToCloudinary(profilePicture);
       } catch (uploadError) {
         setError("Failed to upload profile picture. Please try again.");
@@ -74,7 +76,7 @@ const Signup = () => {
     }
 
     try {
-      const response = await axios.post("http://localhost:5000/api/users/signup", {
+      const response = await axios.post('http://localhost:5000/api/users/signup', {
         firstName,
         lastName,
         username,
@@ -97,7 +99,7 @@ const Signup = () => {
           profilePicture: userData.profilePicture,
           username: userData.username,
           role: userData.role,
-          token: userData.accessToken,
+          accessToken: userData.accessToken,
         }));
 
         navigate("/verify-2fa-pending");

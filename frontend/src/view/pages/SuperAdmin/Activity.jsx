@@ -10,13 +10,17 @@ const Activity = () => {
     return (
         <div className="bg-gray-100 min-h-screen p-6">
             {/* Header */}
-            <div className="flex justify-between items-center mb-16">
-                <h1 className="text-2xl font-medium text-gray-800">Activity</h1>
-                <AdminNavbar 
-                    isAccountDropdownOpen={isAccountDropdownOpen} 
-                    toggleAccountDropdown={toggleAccountDropdown} 
-                />
-            </div>
+            <div className="w-full flex justify-between items-center mb-4">
+      <div className="relative">
+    <h1 className="text-2xl font-medium text-gray-800 hidden md:block">
+        Activity 
+    </h1>
+</div>
+        <AdminNavbar
+          isAccountDropdownOpen={isAccountDropdownOpen}
+          toggleAccountDropdown={toggleAccountDropdown}
+        />
+      </div>
 
             {/* Content */}
             <div>
