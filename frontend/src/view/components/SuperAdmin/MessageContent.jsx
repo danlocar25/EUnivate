@@ -67,32 +67,12 @@ const MessageContent = () => {
     const sendMessage = async () => {
       if (message.trim() || file) {
         const cleanMessage = message.replace(/<\/?p>/g, '').replace(/<br\s*\/?>/g, '').trim();
-        
-        let uploadedFileUrl = null;
-        
-        // Check if there is a file to upload
-        if (file) {
-          const formData = new FormData();
-          formData.append('file', file);
-          formData.append('upload_preset', 'chat_files_preset'); 
-          formData.append('folder', 'chatFiles'); // This will store files in the 'chatFiles' folder
-
-          
-          try {
-            // Upload file to Cloudinary
-            const response = await axios.post('https://api.cloudinary.com/v1_1/dzxzc7kwb/image/upload', formData);
-            uploadedFileUrl = response.data.secure_url;
-          } catch (error) {
-            console.error('Error uploading file to Cloudinary:', error);
-            return; // Exit the function if the file upload fails
-          }
-        }
     
         if (editingMessageId) {
           // Editing an existing message
           const updatedMessage = {
             content: cleanMessage,
-            file: uploadedFileUrl ? { name: file.name, type: file.type, url: uploadedFileUrl } : null,
+            file: file ? { name: file.name, type: file.type, url: URL.createObjectURL(file) } : null,
             time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           };
     
@@ -121,7 +101,7 @@ const MessageContent = () => {
             content: cleanMessage,
             sender: { name: 'You', avatar: 'https://via.placeholder.com/40' },
             time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            file: uploadedFileUrl ? { name: file.name, type: file.type, url: uploadedFileUrl } : null,
+            file: file ? { name: file.name, type: file.type, url: URL.createObjectURL(file) } : null,
             replyTo: replyingTo ? { 
               _id: replyingTo._id,
               content: replyingTo.content,
@@ -130,15 +110,12 @@ const MessageContent = () => {
             } : null,
             edited: false
           };
-
-          // Create a new FormData object to send both the message and the file
-          const formData = new FormData();
-          formData.append('message', JSON.stringify(newMessage));
       
           try {
             const response = await fetch('http://localhost:5000/api/messages', {
               method: 'POST',
-              body: formData, // Send FormData directly
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(newMessage),
             });
       
             if (!response.ok) {
@@ -151,17 +128,19 @@ const MessageContent = () => {
                 msg._id === 'temp-id' ? { ...data } : msg
               )
             );
-            
+          } catch (error) {
+            console.error('Error sending message:', error);
+          }
           setMessages((prevMessages) => [...prevMessages, { ...newMessage, _id: 'temp-id' }]);
           setReplyingTo(null);
           setMessage('');
           setFile(null);
-        } catch (error) {
-          console.error('Error sending message:', error);
-        }
         }
       }
     };
+    
+    
+    
     
 
   useEffect(() => {

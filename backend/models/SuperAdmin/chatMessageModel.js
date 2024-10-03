@@ -3,20 +3,25 @@ import mongoose from 'mongoose';
 const chatMessageSchema = new mongoose.Schema({
   content: {
     type: String,
-    required: false,
+    required: false,  
   },
   sender: {
     name: { type: String, required: true },
-    avatar: { type: String }, // optional avatar URL for sender
+    avatar: { type: String, required: false }, 
   },
   file: {
-    name: { type: String, default: '' }, // file name
-    type: { type: String, default: '' }, // file type
-    url: { type: String, default: '' },  // file URL
+    publicId: {
+      type: String,
+      required: false, //optional 
+    },
+    url: {
+      type: String,
+      required: false,
+    },
   },
   time: {
-    type: String,
-    required: true,
+    type: Date, // Using Date instead of String for timestamps
+    default: Date.now, // Default to the current time
   },
   edited: {
     type: Boolean,

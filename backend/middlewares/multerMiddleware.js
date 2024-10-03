@@ -9,7 +9,7 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// Configure Cloudinary storage for general assets (EunivateAssets)
+// Configure Cloudinary storage for Multer
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
@@ -18,19 +18,8 @@ const storage = new CloudinaryStorage({
   },
 });
 
-// Multer upload middleware for general assets
 const upload = multer({ storage: storage });
 
-// Configure Cloudinary storage for chat files (ChatFiles)
-const chatFileStorage = new CloudinaryStorage({
-  cloudinary: cloudinary,
-  params: {
-    folder: 'ChatFiles', // The folder in Cloudinary where chat files will be stored
-    resource_type: 'auto', // This allows uploading of any file type (images, audio, documents, etc.)
-  },
-});
+export default upload;
 
-// Multer upload middleware for chat files
-const uploadChatFiles = multer({ storage: chatFileStorage });
 
-export { upload, uploadChatFiles };
