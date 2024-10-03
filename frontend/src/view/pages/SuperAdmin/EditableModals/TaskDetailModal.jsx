@@ -50,7 +50,8 @@ const TaskDetailModal = ({ isOpen, onClose, task, projectName, projectId, onUpda
   //objectives
   const [newObjective, setNewObjective] = useState('');
   const [isAddingObjective, setIsAddingObjective] = useState(false);
-  const [updatedTask, setUpdatedTask] = useState(task);
+
+
   //Attachment
   const [newAttachmentFiles, setNewAttachmentFiles] = useState([]);
   const [showSaveAttachmentButton, setShowSaveAttachmentButton] = useState(false);
@@ -72,28 +73,26 @@ const TaskDetailModal = ({ isOpen, onClose, task, projectName, projectId, onUpda
     };
 
 
-    useEffect(() => {
-        // Establish socket connection
+   useEffect(() => {
+  if (isOpen) {
+    console.log('Socket connected?', socket.connected);
+    fetchUsers();
+    fetchComments(); // Fetch comments when the modal opens
 
+    socket.on('task-updated', (updatedTask) => {
+      if (updatedTask._id === task._id) {
+        console.log('Received task update:', updatedTask);
 
-      if (isOpen) {
-        console.log('Socket connected?', socket.connected); 
-        fetchUsers();
-        fetchComments(); // Fetch comments when the modal opens
-    
-        socket.on('task-updated', (updatedTask) => {
-          if (updatedTask._id === task._id) {
-            console.log('Received task update:', updatedTask); // Debug received update
-            setUpdatedTask(updatedTask);  
-            onUpdateTask(updatedTask);  
-          }
-        });
+        onUpdateTask(updatedTask);
       }
-    
-      return () => {
-        socket.off('task-updated');
-      };
-    }, [isOpen, task._id, onUpdateTask]);
+    });
+  }
+
+  return () => {
+    socket.off('task-updated');
+  };
+}, [isOpen, task._id, onUpdateTask]);
+
     
     
     const fetchUsers = async () => {

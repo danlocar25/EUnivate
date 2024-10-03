@@ -76,9 +76,13 @@ const Kanban = ({ projectId, projectName }) => {
     const updatedTasks = tasks.map(task =>
       task._id === updatedTask._id ? updatedTask : task
     );
-    setTasks(updatedTasks); // Update the state with the new task list
-  };
+    setTasks(updatedTasks); // Update the tasks array
   
+    // Check if the updated task is the currently selected task
+    if (selectedTask && selectedTask._id === updatedTask._id) {
+      setSelectedTask(updatedTask); // Update selectedTask
+    }
+  };
 
   const Column = ({ status, children }) => {
     const [, drop] = useDrop({
