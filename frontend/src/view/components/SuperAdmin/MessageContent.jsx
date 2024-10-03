@@ -80,7 +80,7 @@ const MessageContent = () => {
           
           try {
             // Upload file to Cloudinary
-            const response = await axios.post(`https://api.cloudinary.com/v1_1/${process.env.CLOUDINARY_CLOUD_NAME}/upload`, formData);
+            const response = await axios.post('https://api.cloudinary.com/v1_1/dzxzc7kwb/image/upload', formData);
             uploadedFileUrl = response.data.secure_url;
           } catch (error) {
             console.error('Error uploading file to Cloudinary:', error);
