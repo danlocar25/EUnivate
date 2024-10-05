@@ -1,4 +1,5 @@
 import express from 'express';
+<<<<<<< HEAD
 import multer from 'multer'; // Make sure multer is imported
 import {
   getMessages,
@@ -8,6 +9,9 @@ import {
 } from '../controllers/chatMessageController.js';
 import { uploadChatFileToCloudinary } from '../config/cloudnaryConfig.js'; // Ensure correct import path
 import { uploadChatFiles as chatFileUpload } from '../middlewares/multerMiddleware.js';
+=======
+import { getMessages, sendMessage, updateMessage, deleteMessage } from '../controllers/SuperAdmin/Message/chatMessageController.js';
+>>>>>>> a12298df83a5658fe3effd47aaf776844b9a27ef
 
 const router = express.Router();
 const upload = multer({ dest: 'uploads/' }); // Temporary storage

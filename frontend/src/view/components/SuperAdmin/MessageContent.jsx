@@ -97,7 +97,7 @@ const MessageContent = () => {
           // Editing an existing message
           const updatedMessage = {
             content: cleanMessage,
-            file: uploadedFileUrl ? { name: file.name, type: file.type, url: uploadedFileUrl } : null,
+            file: file ? { name: file.name, type: file.type, url: URL.createObjectURL(file) } : null,
             time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           };
     

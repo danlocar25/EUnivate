@@ -1,8 +1,8 @@
 import jwt from 'jsonwebtoken';
-import User from '../models/userModels.js';
+import User from '../models/Client/userModels.js';
 import nodemailer from 'nodemailer';
-import Quotation from '../models/quotationModel.js';
-import {text} from 'express';
+// import Quotation from '../models/quotationModel.js';
+// import {text} from 'express';
 
 // Generate JWT Token
 export const generateToken = (id) => {
@@ -37,7 +37,7 @@ export const protect = async(req, res, next) => {
 };
 // Generate Access Token
 export const generateAccessToken = (id) => {
-  return jwt.sign({ _id: id  }, process.env.JWT_SECRET, { expiresIn: '1h' });
+  return jwt.sign({ _id: id  }, process.env.JWT_SECRET, { expiresIn: '5h' });
 };
 
 // Generate Refresh Token

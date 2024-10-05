@@ -1,194 +1,223 @@
 import React, { useState, useEffect } from 'react';
-import { FaPlus, FaTimes, FaCircle, FaCalendarAlt } from 'react-icons/fa';
-import Modal from './Modal'; // Adjust the path based on the actual file location
-import { useLocation } from 'react-router-dom';
+import { FaPlus, FaCalendar, FaPaperclip, FaCheckCircle } from 'react-icons/fa';
+import { useDrag, useDrop, DndProvider } from 'react-dnd';
+import { HTML5Backend } from 'react-dnd-html5-backend';
+import Modal from './KanbanModals/Modal';
+import TaskDetailModal from './EditableModals/TaskDetailModal'; // New modal for task details
+import axios from 'axios';
 
-const Kanban = () => {
+const ItemType = {
+  TASK: 'task',
+};
+
+const Kanban = ({ projectId, projectName }) => {
   const [isModalOpen, setModalOpen] = useState(false);
+  const [isTaskDetailModalOpen, setTaskDetailModalOpen] = useState(false);
   const [tasks, setTasks] = useState([]);
-  const [user, setUser] = useState({ profilePicture: '' });
-  const [dropdownOpen, setDropdownOpen] = useState(null);
-  const [taskToEdit, setTaskToEdit] = useState(null);
-
-  // Get project name from location state
-  const location = useLocation();
-  const projectName = location.state?.project?.name;
+  const [selectedTask, setSelectedTask] = useState(null); 
 
   useEffect(() => {
-    const storedUser = JSON.parse(localStorage.getItem('user'));
-    if (storedUser) {
-      setUser(storedUser); // Set the user state with the stored user data
-    }
-  }, []);
+    const fetchTasks = async () => {
+      try {
+        if (!projectId) {
+          console.error('Project ID is not defined');
+          return;
+        }
+        const response = await axios.get(`http://localhost:5000/api/users/sa-tasks/${projectId}`);
+        setTasks(response.data.data);
+      } catch (error) {
+        console.error('Error fetching tasks:', error);
+      }
+    };
+    fetchTasks();
+  }, [projectId]);
 
-  useEffect(() => {
-    if (projectName) {
-      // Load tasks for the specific project from local storage
-      const storedTasks = JSON.parse(localStorage.getItem(`kanban-${projectName}`)) || [];
-      setTasks(storedTasks);
-    }
-  }, [projectName]);
+  const handleOpenModal = () => {
+    setModalOpen(true);
+  };
 
-  const handleOpenModal = () => setModalOpen(true);
-  const handleCloseModal = () => setModalOpen(false);
+  const handleCloseModal = () => {
+    setModalOpen(false);
+  };
+
+  const handleOpenTaskDetailModal = (task) => {
+    setSelectedTask(task);
+    setTaskDetailModalOpen(true);
+  };
+
+  const handleCloseTaskDetailModal = () => {
+    setTaskDetailModalOpen(false);
+    setSelectedTask(null); // Clear selected task
+  };
+
+  const updateTaskStatus = async (taskId, newStatus) => {
+    try {
+      await axios.patch(`http://localhost:5000/api/users/sa-tasks/${taskId}`, { status: newStatus });
+    } catch (error) {
+      console.error('Error updating task status:', error);
+    }
+  };
+
+  const moveTask = (taskId, newStatus) => {
+    const updatedTask = tasks.find(task => task._id === taskId);
+    if (updatedTask) {
+      updatedTask.status = newStatus;
+      setTasks([...tasks]);
+      updateTaskStatus(taskId, newStatus);
+    }
+  };
 
   const handleTaskSubmit = (newTask) => {
-    const newTaskWithId = { ...newTask, id: Date.now() }; // Using timestamp as a unique ID
-    const updatedTasks = [...tasks, newTaskWithId];
-    setTasks(updatedTasks);
-    localStorage.setItem(`kanban-${projectName}`, JSON.stringify(updatedTasks));
-    handleCloseModal();
+    setTasks(prevTasks => [...prevTasks, newTask]);
   };
 
-  const handleStatusChange = (task, newStatus) => {
-    const statusToSet = newStatus === 'Pending' ? 'Document' : newStatus;
-    const updatedTasks = tasks.map(t =>
-      t.id === task.id ? { ...t, status: statusToSet } : t
+  // Function to handle task update (description update)
+  const handleUpdateTask = (updatedTask) => {
+    const updatedTasks = tasks.map(task =>
+      task._id === updatedTask._id ? updatedTask : task
     );
-    setTasks(updatedTasks);
-    localStorage.setItem(`kanban-${projectName}`, JSON.stringify(updatedTasks));
-  };
-
-  const getTasksByStatus = (status) => {
-    return tasks.filter(task =>
-      task.status === status ||
-      (status === 'Document' && task.status === 'Pending')
-    );
-  };
-
-  const getStatusIconColor = (status) => {
-    switch (status) {
-      case 'Ongoing':
-        return 'text-yellow-500';
-      case 'Done':
-        return 'text-green-500';
-      case 'Pending':
-        return 'text-gray-500';
-      case 'Todo':
-        return 'text-pink-500';
-      case 'Backlogs':
-        return 'text-red-500';
-      default:
-        return 'text-gray-500';
+    setTasks(updatedTasks); // Update the tasks array
+  
+    // Check if the updated task is the currently selected task
+    if (selectedTask && selectedTask._id === updatedTask._id) {
+      setSelectedTask(updatedTask); // Update selectedTask
     }
   };
 
-  const getDifficultyClasses = (difficulty) => {
-    switch (difficulty) {
-      case 'Easy':
-        return 'bg-green-200 text-green-700';
-      case 'Medium':
-        return 'bg-orange-200 text-orange-700';
-      case 'High':
-        return 'bg-red-200 text-red-700';
-      default:
-        return 'bg-gray-200 text-gray-700';
-    }
+  const Column = ({ status, children }) => {
+    const [, drop] = useDrop({
+      accept: ItemType.TASK,
+      drop: (item) => moveTask(item.id, status),
+    });
+  
+    return (
+      <div ref={drop} className="w-full sm:w-1/5 p-2">
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="text-base text-gray-600 font-bold">{status}</h2>
+          <button
+            onClick={handleOpenModal}
+            className="text-gray-600 p-0 flex items-center justify-center"
+            style={{ width: '30px', height: '30px' }}
+          >
+            <FaPlus size={16} />
+          </button>
+        </div>
+        <div className="space-y-2">{children}</div>
+      </div>
+    );
   };
+  
+  const TaskCard = ({ task }) => {
+    const [, drag] = useDrag({
+      type: ItemType.TASK,
+      item: { id: task._id },
+    });
 
-  const handleDropdownToggle = (task) => {
-    setDropdownOpen(prev => prev === task ? null : task);
-    setTaskToEdit(task);
-  };
+    const handleTaskClick = () => {
+      handleOpenTaskDetailModal(task); // Open the task detail modal
+    };
 
-  return (
-    <div className="flex space-x-4 p-4">
-      {['Document', 'Todo', 'Ongoing', 'Done', 'Backlogs'].map((status) => (
-        <div key={status} className="w-1/4">
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="text-xl font-bold">{status}</h2>
-            <button
-              onClick={handleOpenModal}
-              className="bg-red-700 text-white p-1 rounded flex items-center justify-center"
-              style={{ width: '30px', height: '30px' }}
-            >
-              {status === 'Backlogs' ? <FaTimes size={16} /> : <FaPlus size={16} />}
-            </button>
+    const getPriorityBackgroundColor = (priority) => {
+      switch (priority) {
+        case 'easy':
+          return 'bg-green-200 text-green-800';
+        case 'medium':
+          return 'bg-orange-200 text-orange-800';
+        case 'hard':
+          return 'bg-red-200 text-red-800';
+        default:
+          return 'bg-gray-200 text-gray-800';
+      }
+    };
+
+    const formatStartMonth = (startDate) => {
+      if (!startDate) return 'N/A';
+      const date = new Date(startDate);
+      return date.toLocaleString('default', { month: 'short' }); 
+    };
+
+    return (
+      <div ref={drag} className="p-4 rounded-lg shadow-md bg-white relative" onClick={handleTaskClick}>
+        <div className="flex items-start justify-between">
+          <div className={`px-3 py-2 text-sm font-medium rounded-sm ${getPriorityBackgroundColor(task.priority)}`}>
+            {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
           </div>
-          <div>
-            {getTasksByStatus(status).map((task) => (
-              <div key={task.id} className="border p-2 mb-2 rounded bg-white shadow-md">
-                <div className="flex items-center justify-between mb-2">
-                  <div className={`text-sm font-semibold py-2 px-3 rounded ${getDifficultyClasses(task.difficulty)}`}>
-                    {task.difficulty}
-                  </div>
-                  <div className="relative">
-                    <FaCircle
-                      size={20}
-                      className={`${getStatusIconColor(task.status)} ml-4 cursor-pointer`}
-                      onClick={() => handleDropdownToggle(task)}
-                    />
-                    {dropdownOpen === task && (
-                      <div className="absolute right-0 mt-2 bg-white border border-gray-300 rounded shadow-lg z-10">
-                        {['Ongoing', 'Done', 'Pending', 'Todo', 'Backlogs'].map((statusOption) => (
-                          <button
-                            key={statusOption}
-                            onClick={() => {
-                              handleStatusChange(task, statusOption);
-                              setDropdownOpen(null);
-                            }}
-                            className="flex items-center p-2 hover:bg-gray-100 w-full text-left"
-                          >
-                            <FaCircle className={getStatusIconColor(statusOption)} />
-                            <span className="ml-2">{statusOption}</span>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <h3 className="font-semibold mb-2 text-2xl">{task.taskName}</h3>
-                <p className="mt-2">{task.objective}</p>
-                <div className={`flex flex-col items-center gap-4 mt-2`}>
-  {task.image1 && (
-    <img
-      src={task.image1}
-      alt="Task 1"
-      className={`object-cover rounded-lg border  w-full md:w-4/4 lg:w-1/10 h-auto`}
-      style={{ maxHeight: '200px' }}
-    />
-  )}
-  {task.image2 && (
-    <img
-      src={task.image2}
-      alt="Task 2"
-      className={`object-cover rounded-lg border w-full md:w-4/4 lg:w-1/10 h-auto`}
-      style={{ maxHeight: '200px' }}
-    />
-  )}
-</div>
-
-                <div className="p-2 mt-2 flex items-center">
-                  <div className="mr-2">
-                    {user.profilePicture ? (
-                      <img 
-                        src={user.profilePicture.url || user.profilePicture} 
-                        alt="Profile"
-                        className="w-7 h-7 rounded-full object-cover"
-                      />
-                    ) : (
-                      <img 
-                        src="/mnt/data/image.png" 
-                        alt="Default Profile"
-                        className="w-7 h-7 rounded-full object-cover"
-                      />
-                    )}
-                  </div>
-                  <div className="ml-auto flex items-center">
-                    <FaCalendarAlt size={16} className="text-gray-500 mr-2" />
-                    <p>
-                      {new Intl.DateTimeFormat('en-US', { month: 'short' }).format(new Date(task.startDate))}
-                      {task.dueDate ? ` to ${new Intl.DateTimeFormat('en-US', { month: 'short' }).format(new Date(task.dueDate))}` : ''}
-                    </p>
-                  </div>
-                </div>
-              </div>
+          <div className='flex -space-x-3'>
+            {task.assignee && task.assignee.map((member, index) => (
+              <img
+                key={index}
+                src={member.profilePicture?.url}
+                alt={member.name}
+                className="w-8 h-8 rounded-full border-2 border-white"
+                title={member.name}
+              />
             ))}
           </div>
         </div>
+        <div className="mt-2">
+          <h2 className="text-2xl font-semibold mb-2">{task.taskName}</h2>
+          <p className="text-lg text-gray-800 overflow-hidden text-ellipsis whitespace-nowrap">{task.description}</p>
+          {task.attachment && task.attachment.length > 0 && (
+            <div className="mt-4 flex overflow-x-auto space-x-2 py-2 justify-center">
+              {task.attachment.map((attachment, index) => (
+                <img
+                  key={index}
+                  src={attachment?.url}
+                  alt={`Attachment ${index + 1}`}
+                  className="w-full sm:w-40 h-48 sm:h-36 object-cover rounded-md"
+                />
+              ))}
+            </div>
+          )}
+        </div>
+        <div className="mt-5 flex items-center space-x-3 overflow-x-auto">
+          <div className="flex items-center space-x-2 flex-shrink-0">
+            <FaCalendar className="text-gray-400" />
+            <p>{formatStartMonth(task.startDate)}</p>
+          </div>
+          <div className="flex items-center space-x-2 flex-shrink-0">
+            <FaPaperclip className="text-gray-400" />
+            <p>{task.attachment ? task.attachment.length : 0}</p>
+          </div>
+          <div className="flex items-center space-x-2 flex-shrink-0">
+            <FaCheckCircle className="text-gray-400" />
+            <p>{task.objectives ? task.objectives.length : 0}</p>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <DndProvider backend={HTML5Backend}>
+    <div className="flex flex-wrap p-4">
+    {['Document', 'Todo', 'Ongoing', 'Done', 'Backlog'].map((status) => (
+  <Column key={status} status={status}>
+    {tasks
+      .filter(task => task.status === status)
+      .map(task => (
+        <TaskCard key={task._id} task={task} />
       ))}
-      <Modal isOpen={isModalOpen} onClose={handleCloseModal} onTaskSubmit={handleTaskSubmit} />
+  </Column>
+))}
+
     </div>
+    <Modal 
+      isOpen={isModalOpen} 
+      onClose={handleCloseModal} 
+      projectId={projectId} 
+      onTaskSubmit={handleTaskSubmit} 
+    />
+    <TaskDetailModal
+      isOpen={isTaskDetailModalOpen} 
+      onClose={handleCloseTaskDetailModal} 
+      task={selectedTask} 
+      projectName={projectName} // Pass the project name here
+      onUpdateTask={handleUpdateTask} // Pass the update task handler to the modal
+      projectId={projectId} 
+      
+    />
+  </DndProvider>
   );
 };
 

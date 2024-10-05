@@ -406,3 +406,8 @@
         }
       }
 
+/* Add this to your global styles or a CSS module */
+.carousel-item {
+  flex-shrink: 0; /* Prevent items from shrinking */
+  min-width: 120px; /* Adjust based on the desired item width */
+}
