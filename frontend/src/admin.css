@@ -81,7 +81,6 @@
 .sidebar-message-content {
   position: relative;
   background-color: #fff;
-  max-height: max-content;
   top: -16px;
   bottom: 40px;
   right: 24px;

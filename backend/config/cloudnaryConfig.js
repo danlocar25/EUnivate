@@ -9,21 +9,8 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
+// Function to upload to Cloudinary
 const uploadToCloudinary = async (path, folder = 'EunivateAssets') => {
-  try {
-    const result = await cloudinary.uploader.upload(path, { folder: folder });
-    return {
-      url: result.secure_url,
-      publicId: result.public_id,
-    };
-  } catch (err) {
-    console.error("Cloudinary Upload Error:", err);
-    throw err;
-  }
-};
-
-// Upload for ChatFiles
-const uploadChatFileToCloudinary = async (path, folder = 'ChatFiles') => {
   try {
     const result = await cloudinary.uploader.upload(path, { folder });
     return {
@@ -36,5 +23,9 @@ const uploadChatFileToCloudinary = async (path, folder = 'ChatFiles') => {
   }
 };
 
-export { cloudinary, uploadToCloudinary, uploadChatFileToCloudinary };
+// Upload for ChatFiles
+const uploadChatFileToCloudinary = async (path, folder = 'ChatFiles') => {
+  return uploadToCloudinary(path, folder);
+};
 
+export { cloudinary, uploadToCloudinary, uploadChatFileToCloudinary };

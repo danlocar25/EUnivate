@@ -15,34 +15,42 @@ export const getMessages = async (req, res) => {
 // Send a new message
 export const sendMessage = async (req, res) => {
   try {
-    const { content, sender, time, replyTo } = req.body;
-    let file = req.file; // File is attached through the request
+    const { content, sender, time, replyTo } = req.body; // Extract message fields from req.body
     let fileData = null;
 
-    // Upload file to Cloudinary if it exists
-    if (file) {
-      const uploadResult = await uploadChatFileToCloudinary(file.path);
-      fileData = {
-        name: file.originalname,
-        type: file.mimetype,
-        url: uploadResult.url,
-      };
+    // Check if a file is provided in the request
+    if (req.file) {
+      // Call the upload function to upload the file
+      const uploadResult = await uploadChatFileToCloudinary(req.file.path);
+      // Construct the file object to save with the message
+      fileData = { name: req.file.originalname, type: req.file.mimetype, url: uploadResult.url };
     }
 
-    const newMessage = new Message({
+    // Construct the message object to be saved
+    const newMessage = {
       content,
       sender,
-      file: fileData, // Attach the uploaded file data
       time,
-      replyTo: replyTo || null,
-    });
+      file: fileData,  // Include file data if available
+      replyTo: replyTo ? {
+        _id: replyTo._id,
+        content: replyTo.content,
+        sender: replyTo.sender,
+        time: replyTo.time
+      } : null,
+      edited: false,
+    };
 
-    await newMessage.save();
-    res.status(201).json(newMessage);
+    // Save the new message to the database
+    const savedMessage = await Message.create(newMessage);  
+
+    res.status(201).json(savedMessage);  // Respond with the created message
   } catch (error) {
-    res.status(500).json({ error: 'Failed to save message' });
+    console.error('Error sending message:', error);
+    res.status(500).json({ error: 'Failed to send message' });
   }
 };
+
 
 // Update a message by ID
 export const updateMessage = async (req, res) => {

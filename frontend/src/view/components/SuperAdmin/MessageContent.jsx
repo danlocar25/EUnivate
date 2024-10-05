@@ -67,27 +67,32 @@ const MessageContent = () => {
     const sendMessage = async () => {
       if (message.trim() || file) {
         const cleanMessage = message.replace(/<\/?p>/g, '').replace(/<br\s*\/?>/g, '').trim();
-        
         let uploadedFileUrl = null;
-        
-        // Check if there is a file to upload
-        if (file) {
-          const formData = new FormData();
-          formData.append('file', file);
-          formData.append('upload_preset', 'chat_files_preset'); 
-          formData.append('folder', 'chatFiles'); // This will store files in the 'chatFiles' folder
-
-          
-          try {
-            // Upload file to Cloudinary
-            const response = await axios.post(`https://api.cloudinary.com/v1_1/${process.env.CLOUDINARY_CLOUD_NAME}/upload`, formData);
-            uploadedFileUrl = response.data.secure_url;
-          } catch (error) {
-            console.error('Error uploading file to Cloudinary:', error);
-            return; // Exit the function if the file upload fails
-          }
-        }
     
+        // Upload the file if it exists
+    if (file) {
+      const formData = new FormData();
+      formData.append('file', file); // Append the file to FormData
+
+      try {
+        const uploadResponse = await fetch('http://localhost:5000/api/uploadFile', {  // Separate API to handle file uploads
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!uploadResponse.ok) {
+          throw new Error('File upload failed!');
+        }
+
+        const uploadResult = await uploadResponse.json();
+        uploadedFileUrl = uploadResult.url; // Use the returned URL from the server
+      } catch (error) {
+        console.error('Error uploading file:', error);
+        return; // Stop execution if file upload fails
+      }
+    }
+    
+        // Check if we are editing an existing message
         if (editingMessageId) {
           // Editing an existing message
           const updatedMessage = {
@@ -116,52 +121,52 @@ const MessageContent = () => {
             console.error('Error updating message:', error);
           }
         } else {
-          // Sending a new message
-          const newMessage = {
-            content: cleanMessage,
-            sender: { name: 'You', avatar: 'https://via.placeholder.com/40' },
-            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            file: uploadedFileUrl ? { name: file.name, type: file.type, url: uploadedFileUrl } : null,
-            replyTo: replyingTo ? { 
-              _id: replyingTo._id,
-              content: replyingTo.content,
-              sender: replyingTo.sender,
-              time: replyingTo.time
-            } : null,
-            edited: false
-          };
 
-          // Create a new FormData object to send both the message and the file
-          const formData = new FormData();
-          formData.append('message', JSON.stringify(newMessage));
-      
-          try {
-            const response = await fetch('http://localhost:5000/api/messages', {
-              method: 'POST',
-              body: formData, // Send FormData directly
-            });
-      
-            if (!response.ok) {
-              throw new Error(`HTTP error! status: ${response.status}`);
-            }
-      
-            const data = await response.json();
-            setMessages((prevMessages) =>
-              prevMessages.map((msg) =>
-                msg._id === 'temp-id' ? { ...data } : msg
-              )
-            );
-            
-          setMessages((prevMessages) => [...prevMessages, { ...newMessage, _id: 'temp-id' }]);
-          setReplyingTo(null);
-          setMessage('');
-          setFile(null);
-        } catch (error) {
-          console.error('Error sending message:', error);
-        }
+          // Sending a new message
+const newMessage = {
+      content: cleanMessage,
+      sender: { name: 'You', avatar: 'https://via.placeholder.com/40' },
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      file: uploadedFileUrl ? { name: file.name, type: file.type, url: uploadedFileUrl } : null,
+      replyTo: replyingTo ? {
+        _id: replyingTo._id,
+        content: replyingTo.content,
+        sender: replyingTo.sender,
+        time: replyingTo.time
+      } : null,
+      edited: false,
+    };
+
+    console.log('New message object:', newMessage);
+
+    try {
+      const response = await fetch('http://localhost:5000/api/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newMessage),  // Sending as JSON after file upload
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      setMessages((prevMessages) => [...prevMessages, data]);
+      setReplyingTo(null);
+      setMessage('');
+      setFile(null);
+    } catch (error) {
+            console.error('Error sending message:', error);
+          }
         }
       }
     };
+    
+    
+    
+    
     
 
   useEffect(() => {
@@ -237,6 +242,16 @@ const handleDelete = async (messageId) => {
 
   const formatMessageContent = (message) => {
     let content = message.content;
+
+    if (message.file) {
+      content += `
+        <div>
+          <a href="${message.file.url}" target="_blank" rel="noopener noreferrer">
+            ${message.file.name}
+          </a>
+        </div>
+      `;
+    }
   
     if (message.edited) {
       content += ' <span style="color: gray; font-size: 0.75rem;">(Edited)</span>';
