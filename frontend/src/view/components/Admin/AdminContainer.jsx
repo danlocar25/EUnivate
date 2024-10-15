@@ -95,7 +95,7 @@ const AdminContainer = ({ children }) => {
     const handleBellClick = async () => {
         setHasNewNotifications(false);
         try {
-            await fetch('http://localhost:5000/api/users/notifications', { method: 'GET' });
+            await fetch('http://localhost:5000/api/users/notification', { method: 'GET' });
         } catch (error) {
             console.error('Failed to fetch notifications', error);
         }

@@ -1,7 +1,12 @@
+// import { type } from 'express/lib/response';
 import mongoose from 'mongoose';
 
 const projectSchema = new mongoose.Schema({
-  projectName: { type: String, required: true },
+  projectName: { 
+    type: String, 
+    required: true 
+  },
+
   thumbnail: {
     publicId: {
       type: String,
@@ -12,9 +17,20 @@ const projectSchema = new mongoose.Schema({
       required: true,
     }
   },
+
+  workspaceId:{
+    type: String,
+  },
   
-  owner: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, 
-  invitedUsers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  owner: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'User' 
+  }, 
+  
+  invitedUsers: [{ 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'User' 
+  }],
 
 }, { timestamps: true });
 

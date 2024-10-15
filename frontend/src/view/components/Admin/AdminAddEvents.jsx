@@ -58,6 +58,7 @@ const AdminAddEvents = () => {
       };
 
       const response = await axios.post('http://localhost:5000/api/users/addevent', eventData);
+
       console.log(response.data);
       setLoading(false);
       navigate('/events-admin');

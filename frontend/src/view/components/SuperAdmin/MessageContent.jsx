@@ -146,7 +146,7 @@ const MessageContent = () => {
   useEffect(() => {
     const fetchMessages = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/messages');
+        const response = await fetch(`http://localhost:5000/api/messages`);
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -290,7 +290,9 @@ const handleDelete = async (messageId) => {
             }`}
           >
             {msg.sender.name !== 'You' && (
-              <img src={msg.sender.avatar} alt={msg.sender.name} className="rounded-full w-10 h-10 mt-2" />
+              <img src={msg.sender.avatar} 
+              alt={msg.sender.name} 
+              className="rounded-full w-10 h-10 mt-2" />
             )}
             <div className={`p-3 rounded-lg shadow-md  ${
                 msg.sender.name === 'You' ? 'bg-blue-200 text-gray-800' : 'bg-red-100 text-gray-800'

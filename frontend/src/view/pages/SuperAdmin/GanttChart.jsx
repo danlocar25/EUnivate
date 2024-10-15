@@ -178,7 +178,7 @@ const GanttChart = ({ projectId }) => {
                           {task.assignee && task.assignee.map((member, index) => (
                             <img
                               key={index}
-                              src={member.profilePicture?.url || '/path/to/default/avatar.png'}
+                              src={member.profilePicture?.url || member.profilePicture}
                               alt={member.name}
                               className="w-6 h-6 rounded-full border-2 border-white"
                               title={member.name}

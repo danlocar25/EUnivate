@@ -1,33 +1,131 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import { i1, i2, i3, i4 } from '../../../constants/assets';
-import Slider from "react-slick"; // Import react-slick
-import '../../../admin.css';
-import "slick-carousel/slick/slick.css"; // Import slick-carousel css
-import "slick-carousel/slick/slick-theme.css"; // Import slick-carousel theme css
+import Slider from "react-slick";
+import { useNavigate } from 'react-router-dom';
 import AdminNavbar from '../../components/SuperAdmin/AdminNavbar';
-import { FaCalendarAlt } from 'react-icons/fa';
+import '../../../admin.css';
+import "slick-carousel/slick/slick.css";
+import "slick-carousel/slick/slick-theme.css";
+import Today_Task from './Dashboard Table/Today_Task';
+import Ongoing_Project from './Dashboard Table/Ongoing_Project';
+import Activity_Task from './Dashboard Table/Activity_Task'; // Import Activity_Task component
 
 const Dashboard = () => {
     const [isProjectDropdownOpen, setIsProjectDropdownOpen] = useState(false);
     const [isAccountDropdownOpen, setIsAccountDropdownOpen] = useState(false);
-    const [projectCount, setProjectCount] = useState(0);
-    const [projects, setProjects] = useState([]);
+    const [projects, setProjects] = useState([]);  
+    const [taskDetails, setTaskDetails] = useState({}); 
+    const navigate = useNavigate();
+    
+    // Retrieve user profile details
+    const user = JSON.parse(localStorage.getItem('user'));
+    const profilePicture = user?.profilePicture?.url ||  user?.profilePicture;
+    const userName = user?.name;
+    const defaultProfilePictureUrl = 'https://www.imghost.net/ib/YgQep2KBICssXI1_1725211680.png'; // Add the path to your default image
+
+    const [selectedProjectName, setSelectedProjectName] = useState('Projects');
+    const [selectedProjectTaskCounts, setSelectedProjectTaskCounts] = useState({
+        assignedTask: 0,
+        taskComplete: 0,
+        objectiveComplete: 0,
+        projectComplete: 0
+    });
+    
+
+    const handleProjectClick = async (projectId, projectName) => {
+        // Update the selected project name
+        setSelectedProjectName(projectName);
+    
+        // Fetch task details for the selected project from the backend API
+        try {
+            const taskResponse = await axios.get(`http://localhost:5000/api/users/sa-tasks/${projectId}`);
+            const tasks = taskResponse.data.data;
+    
+            const assignedTaskCount = tasks.length;
+            const taskCompleteCount = tasks.filter(task => task.status === 'Done').length;
+            const objectiveCompleteCount = tasks.reduce((total, task) => total + (task.doneObjectivesCount || 0), 0);
+    
+            // Set the new counts based on the selected project's task data
+            const newTaskCounts = {
+                assignedTask: assignedTaskCount,
+                taskComplete: taskCompleteCount,
+                objectiveComplete: objectiveCompleteCount,
+                projectComplete: calculateProgress(projectId) // Calculate progress based on done tasks
+            };
+    
+            // Update the state with the fetched task counts
+            setSelectedProjectTaskCounts(newTaskCounts);
+    
+            // Close the dropdown after selecting a project
+            setIsProjectDropdownOpen(false);
+        } catch (error) {
+            console.error('Error fetching task details:', error);
+        }
+    };
+    
 
     useEffect(() => {
-        const storedProjects = JSON.parse(localStorage.getItem('projects')) || [];
-        setProjects(storedProjects);
-        setProjectCount(storedProjects.length);
+        const fetchProjects = async () => {
+            try {
+                const user = JSON.parse(localStorage.getItem('user')); // You may want to fetch user from your auth system instead of localStorage
+                const accessToken = user ? user.accessToken : null;
+    
+                const response = await axios.get('http://localhost:5000/api/users/sa-getnewproject', {
+                    headers: {
+                        Authorization: `Bearer ${accessToken}`,
+                    },
+                });
+           
+                setProjects(response.data);
+    
+                const taskDetailsPromises = response.data.map(async (project) => {
+                    const taskResponse = await axios.get(`http://localhost:5000/api/users/sa-tasks/${project._id}`);
+                    const tasks = taskResponse.data.data;
+    
+                    const attachmentsCount = tasks.reduce((total, task) => total + (task.attachment?.length || 0), 0);
+                    const objectivesCount = tasks.reduce((total, task) => total + (task.objectives?.length || 0), 0);
+    
+                    return {
+                        projectId: project._id,
+                        attachmentsCount,
+                        objectivesCount,
+                        tasks
+                    };
+                });
+    
+                const details = await Promise.all(taskDetailsPromises);
+    
+                const taskDetailsMap = details.reduce((acc, { projectId, attachmentsCount, objectivesCount, tasks }) => {
+                    acc[projectId] = { attachmentsCount, objectivesCount, tasks };
+                    return acc;
+                }, {});
+    
+                setTaskDetails(taskDetailsMap);
+            } catch (error) {
+                console.error('Error fetching projects:', error);
+            }
+        };
+    
+        fetchProjects();
     }, []);
+    
 
     const toggleProjectDropdown = () => setIsProjectDropdownOpen(!isProjectDropdownOpen);
     const toggleAccountDropdown = () => setIsAccountDropdownOpen(!isAccountDropdownOpen);
 
-    // Settings for the react-slick carousel
+    const calculateProgress = (projectId) => {
+        const { tasks = [] } = taskDetails[projectId] || {};
+        const totalTasks = tasks.length;
+        const doneTasks = tasks.filter(task => task.status === 'Done').length;
+        return totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0; // Round the percentage
+    };
+
     const sliderSettings = {
         dots: true,
         infinite: true,
         speed: 500,
-        slidesToShow: 2,  // Show two items at a time on mobile
+        slidesToShow: 2,
         slidesToScroll: 1,
         arrows: false,
         swipeToSlide: true,
@@ -35,56 +133,42 @@ const Dashboard = () => {
 
     return (
         <div className="bg-gray-100 min-h-screen p-6">
-            {/* Header */}
-            <div className="flex justify-between items-center mb-16">
+            <div className="w-full flex justify-between items-center mb-4">
                 <div className="relative">
-                    <h1 className="text-2xl font-medium text-gray-800 hidden md:block">
+                    <h1 className={`text-2xl font-medium text-gray-800 hidden md:block`}>
                         Dashboard
                     </h1>
                 </div>
-
-                <AdminNavbar
+                <AdminNavbar 
                     isAccountDropdownOpen={isAccountDropdownOpen}
                     toggleAccountDropdown={toggleAccountDropdown}
                 />
             </div>
 
-            {/* Mobile Dashboard Text */}
             <div className="block md:hidden text-black text-2xl font-semibold ml-2 mb-3">
                 Dashboard
             </div>
 
-           {/* Project Dropdown */}
-           <div className="relative mb-6 z-20"> 
-                <button
-                    onClick={toggleProjectDropdown}
-                    className="relative flex items-center h-12 w-56 px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-800 shadow-sm"
-                >
-                    <span className="text-sm font-medium">Projects</span>
-                    <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className={`absolute right-4 w-5 h-5 transform transition-transform duration-300 ${isProjectDropdownOpen ? 'rotate-180' : 'rotate-0'}`}
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                    >
+            {/* Project Dropdown */}
+            <div className="relative mb-6 z-20">
+                <button onClick={toggleProjectDropdown} className="relative flex items-center h-12 w-56 px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-800 shadow-sm">
+                    <span className="text-sm font-medium">{selectedProjectName}</span> {/* Display the selected project name */}
+                    <svg className={`absolute right-4 w-5 h-5 transform transition-transform duration-300 ${isProjectDropdownOpen ? 'rotate-180' : 'rotate-0'}`} xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
                         <path d="M6 9l6 6 6-6" />
                     </svg>
                 </button>
 
                 {/* Project Dropdown Menu */}
-                <div className={`absolute left-0 mt-2 w-64 bg-white border border-gray-300 rounded-lg shadow-lg z-50 ${isProjectDropdownOpen ? 'block' : 'hidden'}`}>  {/* Ensure dropdown is in front */}
+                <div className={`absolute left-0 mt-2 w-64 bg-white border border-gray-300 rounded-lg shadow-lg z-50 ${isProjectDropdownOpen ? 'block' : 'hidden'}`}>
                     {projects.length > 0 ? (
                         projects.map((project, index) => (
-                            <a
-                                key={index}
-                                href={`/project/${project.id}`}
+                            <a 
+                                key={index} 
+                                href="#" 
+                                onClick={() => handleProjectClick(project._id, project.projectName)} 
                                 className="block px-6 py-3 text-gray-800 hover:bg-gray-100"
                             >
-                                {project.name}
+                                {project.projectName}
                             </a>
                         ))
                     ) : (
@@ -93,59 +177,53 @@ const Dashboard = () => {
                 </div>
             </div>
 
-            {/* Main Content Area */}
-            <div className="mb-6">
-                {/* For Desktop: Show flex row layout, for mobile show carousel */}
-                <div className="hidden md:flex flex-wrap gap-4 relative z-0">  {/* Ensure boxes are behind */}
-                    {[{ title: "Assigned Task", icon: i1, count: projectCount },
-                      { title: "Task Complete", icon: i2 },
-                      { title: "Objective Complete", icon: i3 },
-                      { title: "Project Complete", icon: i4 }
-                    ].map(({ title, icon, count }, index) => (
-                        <div
-                            key={index}
-                            className="flex-1 min-w-[200px] bg-white p-4 border border-gray-300 rounded-lg shadow-sm flex items-center"
-                            style={{
-                                backgroundImage: `url(${icon})`,
-                                backgroundSize: '40px 40px',
-                                backgroundRepeat: 'no-repeat',
-                                backgroundPosition: '18px center'
-                            }}
-                        >
-                            {/* Text and Number */}
-                            <div className="ml-16">
-                                <div className="text-gray-800 font-semibold mb-1 text-sm">{title}</div>
-                                <div className="text-3xl font-bold">{count || 0}</div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
+            {/* Project Cards */}
+            <div className="hidden md:flex flex-wrap gap-4 relative z-0 mb-6">
+    {[{ title: "Assigned Task", icon: i1, count: selectedProjectTaskCounts.assignedTask },
+      { title: "Task Complete", icon: i2, count: selectedProjectTaskCounts.taskComplete },
+      { title: "Objective Complete", icon: i3, count: selectedProjectTaskCounts.objectiveComplete },
+      { title: "Project Complete", icon: i4, count: `${selectedProjectTaskCounts.projectComplete}%` } // Add % for project complete
+    ].map(({ title, icon, count }, index) => (
+        <div
+            key={index}
+            className="flex-1 min-w-[200px] bg-white p-4 border border-gray-300 rounded-lg shadow-sm flex items-center"
+            style={{
+                backgroundImage: `url(${icon})`,
+                backgroundSize: '40px 40px',
+                backgroundRepeat: 'no-repeat',
+                backgroundPosition: '18px center'
+            }}
+        >
+            <div className="ml-16">
+                <div className="text-gray-800 font-semibold mb-1 text-sm">{title}</div>
+                <div className="text-3xl font-bold">{count || 0}</div> {/* Ensure the percentage symbol is included */}
+            </div>
+        </div>
+    ))}
+</div>
 
-
-{/* For Mobile: Show as a carousel with square boxes */}
-<div className="block md:hidden">
+                <div className="block md:hidden">
                     <Slider {...sliderSettings}>
-                        {[{ title: "Assigned Task", icon: i1, count: projectCount },
-                          { title: "Task Complete", icon: i2 },
-                          { title: "Objective Complete", icon: i3 },
-                          { title: "Project Complete", icon: i4 }
+                        {[{ title: "Assigned Task", icon: i1, count: selectedProjectTaskCounts.assignedTask },
+                        { title: "Task Complete", icon: i2, count: selectedProjectTaskCounts.taskComplete },
+                        { title: "Objective Complete", icon: i3, count: selectedProjectTaskCounts.objectiveComplete },
+                        { title: "Project Complete", icon: i4, count: `${selectedProjectTaskCounts.projectComplete}%` }
                         ].map(({ title, icon, count }, index) => (
                             <div key={index} className="p-4 flex flex-col items-start justify-center">
                                 <div
                                     className="bg-white p-4 border border-gray-300 rounded-lg shadow-sm flex flex-col items-start justify-start"
                                     style={{
-                                        minWidth: '150px', // Square dimensions for mobile
+                                        minWidth: '150px',
                                         height: '200px',
                                         backgroundImage: `url(${icon})`,
-                                        backgroundSize: '60px 60px', // Icon size
+                                        backgroundSize: '60px 60px',
                                         backgroundRepeat: 'no-repeat',
-                                        backgroundPosition: 'left 24px top 20px', // Position the icon at the top left with some margin
+                                        backgroundPosition: 'left 24px top 20px',
                                     }}
                                 >
-                                    {/* Text and Number */}
-                                    <div className="ml-2 mt-20 text-left"> {/* Adjust margin-top to fine-tune spacing */}
-                                        <div className="text-gray-800 font-semibold mb-1 text-xl">{title}</div> {/* Reduced font size */}
-                                        <div className="text-2xl font-bold">{count || 0}</div> {/* Reduced font size */}
+                                    <div className="ml-2 mt-20 text-left">
+                                        <div className="text-gray-800 font-semibold mb-1 text-xl">{title}</div>
+                                        <div className="text-2xl font-bold">{count || 0}</div>
                                     </div>
                                 </div>
                             </div>
@@ -154,56 +232,39 @@ const Dashboard = () => {
                 </div>
 
 
-
-
-            </div>
-
-{/* Today Task and Activity */}
-<div className="flex flex-col md:flex-row mb-2 gap-4">
-    <div className="w-full md:w-3/5">
-        <h2 className="text-medium font-semibold text-gray-800 mb-2">Today Task</h2>
-        <div className="bg-white p-4 border border-gray-300 rounded-lg shadow-sm today-task-div">
-            <p>Content for Today Task goes here...</p>
-        </div>
+                
+            {/* Today Task, Activity, and Ongoing Projects Section */}
+            <div className="flex flex-col md:flex-row mb-2 gap-4">
+                   {/* Today Task */}
+                   <div className="w-full md:w-3/5">
+                   
+        <Today_Task projects={projects} taskDetails={taskDetails} />
     </div>
-    <div className="w-full md:w-2/5">
-        <h2 className="text-medium font-semibold text-gray-800 mb-2">Activity</h2>
-        <div className="bg-white p-4 border border-gray-300 rounded-lg shadow-sm activity-div">
-            <p>Content for Activity goes here...</p>
+
+           {/* Activity and Ongoing Projects Section */}
+<div className="w-full md:w-2/5 flex-grow flex flex-col gap-2"> {/* Flex column and reduced gap */}
+    {/* Activity Section */}
+        <div className="h-1/4">
+            <Activity_Task 
+                projects={projects}
+                taskDetails={taskDetails}
+                profilePicture={profilePicture}
+                userName={userName}
+                defaultProfilePictureUrl={defaultProfilePictureUrl}
+            />
         </div>
+
+    {/* Ongoing Projects Section */}
+    <div className="h-full mt-10"> {/* Added margin-top for spacing */}
+        <Ongoing_Project 
+            projects={projects} 
+            taskDetails={taskDetails} 
+            calculateProgress={calculateProgress} 
+        />
     </div>
 </div>
 
-
-
-            {/* Ongoing Projects */}
-            <div className="flex flex-col">
-                <h2 className="text-medium font-semibold text-gray-800 mb-2">Ongoing Projects</h2>
-                <div className="ongoing-projects">
-                    {projects.length > 0 ? (
-                        projects.map((project, index) => (
-                            <div key={index} className="bg-white p-4 border border-gray-200 rounded-md shadow-md mb-4 flex items-center space-x-4">
-                                {project.image && (
-                                    <img
-                                        src={project.image}
-                                        alt={project.name}
-                                        className="w-16 h-16 object-cover rounded-md"
-                                    />
-                                )}
-                                <div>
-                                    <p className="text-gray-800 font-semibold">{project.name}.App</p>
-                                    <div className="flex items-center space-x-2 text-gray-500">
-                                        <FaCalendarAlt className="w-4 h-4" />
-                                        <p>{project.date}</p>
-                                    </div>
-                                </div>
-                            </div>
-                        ))
-                    ) : (
-                        <p className="text-gray-500">No ongoing projects</p>
-                    )}
-                </div>
-            </div>
+        </div>
         </div>
     );
 };

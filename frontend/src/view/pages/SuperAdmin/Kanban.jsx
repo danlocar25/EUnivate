@@ -50,9 +50,12 @@ const Kanban = ({ projectId, projectName }) => {
     setSelectedTask(null); // Clear selected task
   };
 
-  const updateTaskStatus = async (taskId, newStatus) => {
+  const updateTaskStatus = async (taskId, newStatus,modifiedBy) => {
     try {
-      await axios.patch(`http://localhost:5000/api/users/sa-tasks/${taskId}`, { status: newStatus });
+      await axios.patch(`http://localhost:5000/api/users/sa-tasks/${taskId}`, {    status: newStatus,
+        modifiedBy: modifiedBy,
+        
+       });
     } catch (error) {
       console.error('Error updating task status:', error);
     }
@@ -62,8 +65,10 @@ const Kanban = ({ projectId, projectName }) => {
     const updatedTask = tasks.find(task => task._id === taskId);
     if (updatedTask) {
       updatedTask.status = newStatus;
+      const user = JSON.parse(localStorage.getItem('user'));
+      const currentUserId = user?._id;
       setTasks([...tasks]);
-      updateTaskStatus(taskId, newStatus);
+      updateTaskStatus(taskId, newStatus,currentUserId);
     }
   };
 
@@ -146,7 +151,7 @@ const Kanban = ({ projectId, projectName }) => {
             {task.assignee && task.assignee.map((member, index) => (
               <img
                 key={index}
-                src={member.profilePicture?.url}
+                src={member.profilePicture?.url || member.profilePicture} 
                 alt={member.name}
                 className="w-8 h-8 rounded-full border-2 border-white"
                 title={member.name}
@@ -181,7 +186,8 @@ const Kanban = ({ projectId, projectName }) => {
           </div>
           <div className="flex items-center space-x-2 flex-shrink-0">
             <FaCheckCircle className="text-gray-400" />
-            <p>{task.objectives ? task.objectives.length : 0}</p>
+            <p>{task.doneObjectivesCount || 0}</p>
+
           </div>
         </div>
       </div>

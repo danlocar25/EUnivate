@@ -13,10 +13,11 @@ const Signup = () => {
   const [password, setPassword] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [profilePicture, setProfilePicture] = useState(null);
-  const [role, setRole] = useState("User"); // Default role
+  const [role, setRole] = useState("User");
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState(""); // For displaying errors
+  const [error, setError] = useState(""); 
   const [loading, setLoading] = useState(false);
+  const [profilePicturePreview, setProfilePicturePreview] = useState(null); // State for image preview
   const navigate = useNavigate();
 
   const togglePasswordVisibility = () => {
@@ -29,21 +30,33 @@ const Signup = () => {
   };
 
   const handleProfilePictureChange = (e) => {
-    setProfilePicture(e.target.files[0]);
+    const file = e.target.files[0];
+    setProfilePicture(file);
+    
+    // Create a preview URL for the selected image
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setProfilePicturePreview(reader.result); // Set the image preview URL
+    };
+    if (file) {
+      reader.readAsDataURL(file);
+    } else {
+      setProfilePicturePreview(null);
+    }
   };
 
   const uploadImageToCloudinary = async (file) => {
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('upload_preset', 'EunivateImage'); 
-    formData.append('cloud_name', 'dzxzc7kwb'); 
+    formData.append('upload_preset', 'EunivateImage');
+    formData.append('cloud_name', 'dzxzc7kwb');
 
     try {
       const response = await axios.post(
         'https://api.cloudinary.com/v1_1/dzxzc7kwb/image/upload',
         formData
       );
-      return response.data.url; // URL of the uploaded image
+      return response.data.url;
     } catch (error) {
       console.error('Error uploading image:', error);
       throw error;
@@ -52,7 +65,7 @@ const Signup = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(""); // Clear previous errors
+    setError(""); 
     setLoading(true);
 
     if (!validatePassword(password)) {
@@ -207,19 +220,27 @@ const Signup = () => {
             </span>
           </div>
 
-          <div className="relative mt-4">
-            <FontAwesomeIcon icon={faImage} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-            <label htmlFor="profilePicture" className="cursor-pointer w-52 flex items-center p-3 pl-10 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
-              <span className="text-gray-500">Upload Profile Picture</span>
-              <input
-                id="profilePicture"
-                type="file"
-                name="profilePicture"
-                accept="image/*"
-                onChange={handleProfilePictureChange}
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-              />
-            </label>
+          <div className="relative mt-4 flex items-center justify-between">
+            <div className="flex-1">
+              <FontAwesomeIcon icon={faImage} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <label htmlFor="profilePicture" className="cursor-pointer w-52 flex items-center p-3 pl-10 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <span className="text-gray-500">Upload Profile Picture</span>
+                <input
+                  id="profilePicture"
+                  type="file"
+                  name="profilePicture"
+                  accept="image/*"
+                  onChange={handleProfilePictureChange}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                />
+              </label>
+            </div>
+
+            {profilePicturePreview && (
+              <div className="ml-2 w-12 h-12 rounded-full overflow-hidden">
+                <img src={profilePicturePreview} alt="Profile Preview" className="w-full h-full object-cover" />
+              </div>
+            )}
           </div>
 
           <button

@@ -1,4 +1,4 @@
-// models/userMessage.js
+
 import mongoose from 'mongoose';
 
 const userMessageSchema = new mongoose.Schema({

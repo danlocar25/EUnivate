@@ -53,16 +53,29 @@ import Messages from './view/pages/SuperAdmin/Messages';
 import Activity from './view/pages/SuperAdmin/Activity';
 import Settings from './view/pages/SuperAdmin/Settings';
 import ProjectDetails from './view/pages/SuperAdmin/ProjectDetails'; 
+import { WorkspaceProvider } from './view/components/SuperAdmin/workspaceContext.jsx';
+
 
 //Member
-
 import Member from "./view/pages/Members/Member.jsx"; 
 import ProjMem from "./view/pages/Members/ProjectMem.jsx"; 
 import TaskMem from "./view/pages/Members/TaskMem.jsx"; 
+import ProjectDetailsMem from "./view/pages/Members/ProjectdetailsMem.jsx"; 
+import Settings_Members from './view/pages/Members/Settings_Members.jsx';
 
+
+
+//Guest
+import Guest from './view/pages/Guest/Guest.jsx';
+import ProjectG from './view/pages/Guest/ProjectG.jsx';
+import TaskG from './view/pages/Guest/Modal/TaskG.jsx';
+import ProjectdetailsG from './view/pages/Guest/ProjectdetailsG.jsx';
+import GuestAuth from './view/hooks/GuestAuth.jsx';
+import SettingsG from './view/pages/Guest/SettingsG.jsx';
 /* Global CSS */
 import './index.css';
 import './admin.css';
+
 
 
 const App = () => {
@@ -93,50 +106,65 @@ const App = () => {
         <Route path="/quotation-complete" element = { <CompleteQuotation />}/>
         <Route path="/email/quotation/verification-sent" element = { <VerifyEmailQuotationSent />}/>
         <Route path="/quotation-complete" component={CompleteQuotation} />
+        <Route path="/verify-2fa-pending" element={<Verify2FAPending />} />
 
-                <Route path="/verify-2fa-pending" element={<Verify2FAPending />} />
-        {/* <Route path="/verify-2fa-pending" element={<PrivateOTP><Verify2FAPending /></PrivateOTP>} /> */}
 
         {/* Admin Routes */}
-      <Route path="/admin" element={<AdminAuth><AdminDashboard /></AdminAuth>} />
-      <Route path="/admin-addproducts" element={<AdminAuth><AdminAddProduct /></AdminAuth>} />
-      <Route path="/products" element={<AdminAuth><Product /></AdminAuth>} />
-      <Route path="/admin-addprojects" element={<AdminAuth><AdminAddProject /></AdminAuth>} />
-      <Route path="/projects" element={<AdminAuth><Projects /></AdminAuth>} />
-      <Route path="/admin-addevents" element={<AdminAuth><AdminAddEvents /></AdminAuth>} />
-      <Route path="/events-admin" element={<AdminAuth><EventsAdmin /></AdminAuth>} />
+        <Route path="/admin" element={<AdminAuth><AdminDashboard /></AdminAuth>} />
+        <Route path="/admin-addproducts" element={<AdminAuth><AdminAddProduct /></AdminAuth>} />
+        <Route path="/products" element={<AdminAuth><Product /></AdminAuth>} />
+        <Route path="/admin-addprojects" element={<AdminAuth><AdminAddProject /></AdminAuth>} />
+        <Route path="/projects" element={<AdminAuth><Projects /></AdminAuth>} />
+        <Route path="/admin-addevents" element={<AdminAuth><AdminAddEvents /></AdminAuth>} />
+        <Route path="/events-admin" element={<AdminAuth><EventsAdmin /></AdminAuth>} />
         
 
-{/* Members */}
-<Route
-  path="/member/*"
-  element={
-    <MemberAuth>
-      <Member />
-    </MemberAuth>
-  }
->
-  {/* Default route for "/member" */}
-  <Route index element={<ProjMem />} />
-  
-  {/* Other routes */}
-  <Route path="projectmem" element={<ProjMem />} />
-  <Route path="taskmem" element={<TaskMem />} />
-  <Route path="messages" element={<Messages />} />
-  <Route path="settings" element={<Settings />} />
-</Route>
+          {/* Members */}
+          <Route
+            path="/member/*"
+            element={
+              <MemberAuth>
+                <Member />
+              </MemberAuth>
+            }
+          >
+          {/* Default route for "/member" */}
+          <Route index element={<ProjMem />} />
+          <Route path="projects/:id" element={<ProjectDetailsMem />} />
+          <Route path="projectmem" element={<ProjMem />} />
+          <Route path="taskmem" element={<TaskMem />} />
+          <Route path="messages" element={<Messages />} />
+          <Route path="settings_Members" element={<Settings_Members />} />
+        </Route>
 
-        {/*
-              <Route path="/admin-container" element={<AdminContainer />} />
-        <Route path="/verify-2fa-pending" element={<PrivateOTP><Verify2FAPending /></PrivateOTP>} /> */}
+          {/* Guest Account Routes */}
+          <Route
+            path="/guest-dashboard/*"
+            element={
+            <GuestAuth>
+            <Guest />
+            </GuestAuth>
+            }
+          >
+         <Route path="projects/:id" element={<ProjectdetailsG />} />
+          <Route path="projectG" element={<ProjectG />} /> 
+          <Route path="taskG" element={<TaskG />} /> 
+          <Route path="messagesG" element={<Messages />} /> 
+          <Route path="settingsG" element={<SettingsG />} />
+      
+          
+        </Route>
+
 
         {/* Super Admin Routes */}
         <Route
           path="/superadmin/*"
           element={
-            <SuperAdminRoute>
-              <AdminLayout />
-            </SuperAdminRoute>
+            <WorkspaceProvider>
+              <SuperAdminRoute>
+                <AdminLayout />
+              </SuperAdminRoute>  
+            </WorkspaceProvider>
           }
         >
           <Route path="dashboard" element={<Dashboard />} />

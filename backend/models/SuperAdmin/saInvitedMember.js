@@ -3,17 +3,16 @@ import mongoose from 'mongoose';
 const saInvitedMemberSchema = new mongoose.Schema({
     email: {
         type: String,
-        unique: true, 
         require:true,
     },
     role: {
         type: String,
-        enum: ['User', 'members', 'admin', 'superadmin'],
+        enum: ['User', 'guest','members', 'admin', 'superadmin'],
         default: 'User',
-    },      
+    },   
     project: [{
-        type: String,
-        ref: 'User', 
+        type: mongoose.Schema.Types.ObjectId,  // Store project IDs as ObjectId
+        ref: 'SaNewProject',  // Reference the Project model
     
     }],
     profilePicture: {

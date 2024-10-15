@@ -64,11 +64,12 @@ const RaciMatrix = ({ projectId }) => {
                 {task.assignee && task.assignee.length > 0 && (
                   <>
                     <img
-                      src={task.assignee[0]?.profilePicture?.url || '/path/to/default/avatar.png'}
-                      alt={task.assignee[0]?.name}
+                      src={task.assignee[0]?.profilePicture?.url || task.assignee[0]?.profilePicture || 'https://www.imghost.net/ib/YgQep2KBICssXI1_1725211680.png'} // Fallback to a default image URL if neither is available
+                      alt={task.assignee[0]?.name || 'Assignee'} // Fallback to 'Assignee' if name is missing
                       className="w-8 h-8 rounded-full border-2"
-                      title={task.assignee[0]?.name}
+                      title={task.assignee[0]?.name || 'Assignee'} // Fallback to 'Assignee' if name is missing
                     />
+
                     <span className="text-xs sm:text-sm text-gray-800">{task.assignee[0]?.name}</span>
                   </>
                 )}
@@ -81,7 +82,7 @@ const RaciMatrix = ({ projectId }) => {
                 {task.assignee && task.assignee.length > 1 && (
                   <>
                     <img
-                      src={task.assignee[1]?.profilePicture?.url || '/path/to/default/avatar.png'}
+                      src={task.assignee[1]?.profilePicture?.url || 'https://www.imghost.net/ib/YgQep2KBICssXI1_1725211680.png'}
                       alt={task.assignee[1]?.name}
                       className="w-8 h-8 rounded-full border-2"
                       title={task.assignee[1]?.name}

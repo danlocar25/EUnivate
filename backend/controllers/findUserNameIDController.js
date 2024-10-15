@@ -14,3 +14,25 @@ export const findUserByUsername = async (req, res) => {
     }
   };
   
+//find user name of the assignee to the activity page 
+export const getAssignees = async (req, res) => {
+  try {
+      // Check if userIds are passed in query
+      const { userIds } = req.query;
+
+      let users;
+      if (userIds) {
+          // If userIds are provided, find users by the array of IDs
+          const idsArray = userIds.split(','); // Split userIds string into an array
+          users = await User.find({ _id: { $in: idsArray } });
+      } else {
+          // If no userIds are provided, return all users (or you can choose to return an error)
+          users = await User.find({});
+      }
+
+      res.status(200).json(users);
+  } catch (error) {
+      res.status(500).json({ message: 'Error fetching users', error: error.message });
+  }
+};
+

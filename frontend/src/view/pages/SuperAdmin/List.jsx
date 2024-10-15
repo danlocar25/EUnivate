@@ -74,7 +74,7 @@ const List = ({ tasks }) => {
                                             task.assignee.map((member, index) => (
                                                 <div key={index} className="flex items-center">
                                                     <img
-                                                        src={member.profilePicture?.url || '/path/to/default/avatar.png'}
+                                                        src={member.profilePicture?.url || member.profilePicture}
                                                         alt={member.name || 'Default Avatar'}
                                                         className="w-7 h-7 rounded-full object-cover mr-2"
                                                     />

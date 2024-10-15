@@ -1,5 +1,5 @@
-      import express from 'express';
-      const router = express.Router();
+import express from 'express';
+const router = express.Router();
 
       //UserAccounts
       import {createUser } from '../controllers/UserAccounts/userController.js'
@@ -25,6 +25,9 @@
       import { getAddedMembers, createTask, getTasks, getTaskById, updateTask, updateTaskObjectives, addCommentToTask, getTaskComments, getTasksByProjectId, deleteTask } from '../controllers/SuperAdmin/Task/saAddTaskController.js';  
       import { protect, verifySuperAdmin } from '../middlewares/middleware.js'; 
       import { inviteUsers, updateUserRole, getInvitedUsers, removeInvitedMember, getUsers} from '../controllers/SuperAdmin/People/peopleController.js';
+      import { addNewWorkspace, getAllWorkspaces } from '../controllers/SuperAdmin/workspaceController.js';
+      import { getAssignees } from '../controllers/findUserNameIDController.js';
+      import { createMessage,replyToMessage, reactToMessage,starMessage,flagMessage, getAllMessages, deleteMessage} from '../controllers/SuperAdmin/Message/messageController.js';
       
       // User Authentication Routes
       router.post('/login', loginUser);
@@ -37,13 +40,13 @@
       // router.get('/invitedMembers', protect, getInvitedMembersByUserId); 
       router.put('/:userId/role', updateUserRole); 
 
-      // User Management Routes
-      router.get('/', getUsers); 
-      router.post('/signup', createUser);  
-      router.post('/', upload.single('profilePicture'), createUser);
+// User Management Routes
+router.get('/', getUsers); 
+router.post('/signup', createUser);  
+router.post('/', upload.single('profilePicture'), createUser);
 
-      //User Messages Related
-      router.post('/contactEunivate',ContactEunivate );
+//User Messages Related
+router.post('/contactEunivate',ContactEunivate );
 
       //SuperAdminRoutes
       router.post('/sa-newproject',protect, createSaNewProject);
@@ -51,6 +54,10 @@
       router.get('/sa-getnewproject', protect, getAllProjects);
       router.get('/sa-getnewproject/:id', protect,  getProjectById)
       router.get('/findByUsername/:username', findUserByUsername);
+
+      //Workspace
+      router.post('/workspace', protect, addNewWorkspace);
+      router.get('/workspaces', protect, getAllWorkspaces);
       
       //get the Invited users from people on superadmin
       router.post('/invite', protect, inviteUsers); 
@@ -60,7 +67,8 @@
       router.put('/assign-project', protect, assignProjectToUser);
       //add member on the project details on user add icon
       router.post('/add-member-to-project', addMemberToProject);
-
+      // Activity Controller
+      router.get('/assignee', getAssignees); 
       // Task Routes
       router.get('/get-assignee', getAddedMembers);
       router.post('/sa-task', createTask);
@@ -72,6 +80,17 @@
       router.delete('/sa-tasks/:id', deleteTask);
       router.post('/sa-tasks/:taskId/comments', addCommentToTask);
       router.get('/sa-tasks/:taskId/comments', getTaskComments);
+
+      // Message routes
+      router.get('/messages', getAllMessages);
+      router.post('/create-message', createMessage);
+      router.post('/:messageId/reply', replyToMessage);
+      router.post('/:messageId/react', reactToMessage);
+      router.post('/:messageId/star', starMessage);
+      router.post('/:messageId/flag', flagMessage);
+      router.delete('/:messageId', deleteMessage);
+
+
       // quotation route  
       router.post('/quotation',createQuotation);
       router.get('/quotation/confirm/:quotationToken', confirmQuotationEmail);
@@ -80,6 +99,7 @@
       // User Update Routes
       router.put('/:id', updateUser);
       router.put('/:id/password', updateUserPassword);
+
 
         //Admin Routes
       //Products
@@ -110,4 +130,4 @@
         res.status(200).json({ message: 'Welcome to the SuperAdmin dashboard' });
       });
 
-export default router;
+      export default router;

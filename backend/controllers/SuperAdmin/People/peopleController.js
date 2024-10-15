@@ -2,7 +2,11 @@ import User from '../../../models/Client/userModels.js';
 import mongoose from 'mongoose';
 import sendEmail from '../../../utils/sendEmail.js';
 import InviteMember from '../../../models/SuperAdmin/saInvitedMember.js';
-import Project from '../../../models/Admin/addProjects.js';// Import the Project model
+import Project from '../../../models/SuperAdmin/saNewProject.js';
+
+
+//Please dont remove any comments it's used to debug if the system is not working as it's expected
+
 // Fetch all users
 export const getUsers = async (req, res) => {
     try {
@@ -13,7 +17,7 @@ export const getUsers = async (req, res) => {
     }
   };
   
-
+  
 // Invite users with storation to sainvitedUser Schema
 export const inviteUsers = async (req, res) => {
     try {
@@ -33,17 +37,38 @@ export const inviteUsers = async (req, res) => {
                         return;
                     }
 
-                    // Allow the invitation even if the user is already invited to other projects
-                    const newMember = new InviteMember({
-                        email: existingUser.email,
-                        role: roles[index] || existingUser.role || 'User',
-                        project: projects.map(project => project.toString()),
-                        invitedBy: [inviterId],
-                        userId: existingUser._id,
-                        profilePicture: profilePictures[index] || existingUser.profilePicture || {},
-                    });
+                    // Check if the user is already invited
+                    const invitedUser = await InviteMember.findOne({ email: existingUser.email });
+                    if (invitedUser) {
+                        if (!invitedUser.invitedBy.includes(inviterId)) {
+                            invitedUser.invitedBy.push(inviterId);
+                        }
+                        invitedUser.role = roles[index] || invitedUser.role;
+                        invitedUser.project = [...new Set([...invitedUser.project, ...projects.map(project => project.toString())])];
 
-                    await newMember.save();
+                        // Ensure profilePicture is an object
+                        invitedUser.profilePicture = typeof profilePictures[index] === 'string' 
+                            ? { url: profilePictures[index], publicId: '' }
+                            : profilePictures[index] || invitedUser.profilePicture;
+
+                        await invitedUser.save();
+                    } else {
+                        // Create a new invitation if the user is not already invited
+                        const newMember = new InviteMember({
+                            email: existingUser.email,
+                            role: roles[index] || existingUser.role || 'User',
+                            project: projects.map(project => project.toString()),
+                            invitedBy: [inviterId],
+                            userId: existingUser._id,
+                            
+                            // Ensure profilePicture is an object
+                            profilePicture: typeof profilePictures[index] === 'string' 
+                                ? { url: profilePictures[index], publicId: '' }
+                                : profilePictures[index] || existingUser.profilePicture || {},
+                        });
+
+                        await newMember.save();
+                    }
 
                     await sendEmail({
                         email: existingUser.email,
@@ -70,21 +95,27 @@ export const inviteUsers = async (req, res) => {
 export const getInvitedUsers = async (req, res) => {
     try {
         const userId = req.user._id;
+        // console.log('Fetching invited users for userId:', userId);  // Log userId to track which user is making the request
 
-        // Fetch invited users based on some custom logic
+        // Fetch invited users and populate the project field with full project details
         const invitedUsers = await InviteMember.find({
             $or: [
                 { invitedBy: userId },
                 // Add other conditions if needed
             ]
-        })
+        }).populate('project', 'projectName');  // Populates only the projectName field of related projects
+
+        // console.log('Raw invitedUsers data:', invitedUsers);  // Log the invitedUsers data after fetching and populating
 
         if (invitedUsers.length === 0) {
+            console.log('No invited users found for userId:', userId);  // Log if no invited users are found
             return res.status(404).json({ message: 'No invited users found' });
         }
 
+        // console.log('Sending invitedUsers response:', invitedUsers);  // Log the data before sending the response
         res.status(200).json({ invitedUsers });
     } catch (error) {
+        console.error('Error fetching invited users:', error.message);  // Log the error message
         res.status(500).json({ message: 'Error fetching invited users', error: error.message });
     }
 };
@@ -97,7 +128,7 @@ export const updateUserRole = async (req, res) => {
         const { userId } = req.params;
         const { role } = req.body;
 
-        console.log(`Updating role for userId: ${userId} to role: ${role}`);
+        // console.log(`Updating role for userId: ${userId} to role: ${role}`);
 
         // Find and update the user role
         const user = await User.findByIdAndUpdate(userId, { role }, { new: true });
@@ -110,7 +141,7 @@ export const updateUserRole = async (req, res) => {
         // Update the role in InviteMember if the user was found and updated
         await InviteMember.updateMany({ email: user.email }, { role });
 
-        console.log(`Updated user role for ${user.email} to ${role}`);
+        // console.log(`Updated user role for ${user.email} to ${role}`);
 
         // Send an email to the user notifying them of the role change
         await sendEmail({
@@ -119,7 +150,7 @@ export const updateUserRole = async (req, res) => {
             message: `Your account role has been changed to ${role}. Please log in again.`,
         });
 
-        console.log(`Email notification sent to ${user.email}`);
+        // console.log(`Email notification sent to ${user.email}`);
 
         res.status(200).json({ message: 'Role updated successfully and email sent', user });
     } catch (error) {
@@ -174,6 +205,3 @@ export const removeInvitedMember = async (req, res) => {
         res.status(500).json({ message: 'Error removing invited member', error: error.message });
     }
 };
-
-
-

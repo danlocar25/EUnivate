@@ -4,7 +4,6 @@ import AdminNavbar from '../../components/SuperAdmin/AdminNavbar';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faChevronDown, faChevronRight } from '@fortawesome/free-solid-svg-icons';
 import { User } from '../../../constants/assets';
-import axios from 'axios';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -21,12 +20,9 @@ const People = () => {
     const [selectedRole, setSelectedRole] = useState('');
     const [selectedEmails, setSelectedEmails] = useState([]);
     const [projects, setProjects] = useState([]);
-    // const [selectedProject, setSelectedProject] = useState(null);
-    // const dropdownRef = useRef();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
-    const [showUsersInModal, setShowUsersInModal] = useState(false);
-
+    const [showUsersInModal, setShowUsersInModal] = useState(false); 
     const fetchProjects = async () => {
         try {
             const user = JSON.parse(localStorage.getItem('user'));
@@ -80,28 +76,23 @@ const People = () => {
 
             const invitedUsersData = await invitedUsersResponse.json();
 
-            const updatedInvitedUsers = invitedUsersData.invitedUsers.map((invitedUser) => {
-                const userFromDB = users.find((user) => user.email === invitedUser.email);
-                const projectNames = invitedUser.project.length > 0 
-                    ? invitedUser.project.map(p => p.projectName).join(', ') 
-                    : '';
+             const updatedInvitedUsers = invitedUsersData.invitedUsers.map((invitedUser) => {
+            const userFromDB = users.find((user) => user.email === invitedUser.email);
+            
+                        return userFromDB
+                            ? { ...invitedUser, role: userFromDB.role, profilePicture: userFromDB.profilePicture, _id: userFromDB._id }
+                            : invitedUser;
+                    });
 
-                return userFromDB
-                    ? { ...invitedUser, role: userFromDB.role, profilePicture: userFromDB.profilePicture, _id: userFromDB._id, project: projectNames }
-                    : invitedUser;
-            });
-    
-            setInvitedUsers(updatedInvitedUsers);
-        } catch (error) {
-            console.error('Error fetching users:', error);
-            setError(error.message);
-        }
-    };
+                    setInvitedUsers(updatedInvitedUsers);
+                } catch (error) {
+                    console.error('Error fetching users:', error);
+                    setError(error.message);
+                }
+            };
 
     useEffect(() => {
         fetchUsers();
-        fetchProjects();
-
         const handleClickOutside = (event) => {
             if (!event.target.closest('.role-dropdown') && !event.target.closest('.role-toggle')) {
                 setIsRoleDropdownOpen({});
@@ -321,27 +312,28 @@ const People = () => {
 
     const handleRemoveUser = async (userEmail) => {
         const token = JSON.parse(localStorage.getItem('user'))?.accessToken;
-
-    if (!token) {
-        toast.error('Access token is missing. Please log in again.');
-        return;
-    }
-
-    const invitedMember = invitedUsers.find((u) => u.email === userEmail);
-    if (!invitedMember) {
-        toast.error('Invited member not found in the list.');
-        return;
-    }
-
-    try {
-        const response = await fetch(`http://localhost:5000/api/users/invited/${invitedMember._id}`, {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`,
-            },
-        });
-
+    
+        if (!token) {
+            alert('Access token is missing. Please log in again.');
+            return;
+        }
+    
+        const invitedMember = invitedUsers.find((u) => u.email === userEmail);
+        if (!invitedMember) {
+            alert('Invited member not found in the list.');
+            return;
+        }
+    
+        try {
+            // Send the actual user ID for deletion
+            const response = await fetch(`http://localhost:5000/api/users/invited/${invitedMember.userId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                },
+            });
+    
             if (!response.ok) {
                 const errorResponse = await response.json();
                 throw new Error(errorResponse.message);
@@ -457,7 +449,7 @@ const People = () => {
                                         {isRoleDropdownOpen[user.email] && (
                             <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50 role-dropdown">
                                 <ul className="py-1">
-                                    {['Guest', 'Member', 'Admin', 'Superadmin'].map((role) => (
+                                    {['Guest', 'members', 'admin', 'superadmin'].map((role) => (
                                         <li
                                             key={role}
                                             className="px-4 py-2 text-gray-700 cursor-pointer hover:bg-gray-100"
@@ -471,37 +463,41 @@ const People = () => {
                         )}
 
                         </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 relative">
-                                <div className="flex items-center">
-                                    {user.project || 'No Project Assigned'}
-                                    {user.project.length > 0 && (
-                                        <FontAwesomeIcon
-                                            icon={isProjectDropdownOpen[user.email] ? faChevronDown : faChevronRight}
-                                            className="ml-2 cursor-pointer"
-                                            onClick={() => toggleProjectDropdown(user.email)}
-                                        />
-                                    )}
-                                </div>
-                                {isProjectDropdownOpen[user.email] && user.project.length > 0 && (
-                                    <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
-                                        <ul>
-                                            {projects.length > 0 ? (
-                                                projects.map((project, index) => (
-                                                    <li 
-                                                        key={index} 
-                                                        className="py-2 cursor-pointer hover:bg-gray-100 text-center"
-                                                        onClick={() => (project, user.email)}
-                                                    >
-                                                        {project.projectName}
-                                                    </li>
-                                                ))
-                                            ) : (
-                                                <p className="text-center">No projects found.</p>
-                                            )}
-                                        </ul>
-                                    </div>
-                                )}
-                                  </td>
+                
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 relative">
+    <div className="flex items-center">
+        {/* Safely check if user.project is an array and display the first project name only */}
+        {Array.isArray(user.project) && user.project.length > 0 
+            ? user.project[0].projectName  // Display the first project name
+            : 'No Project Assigned'}
+
+        {Array.isArray(user.project) && user.project.length > 1 && (  // Show dropdown icon if more than one project
+            <FontAwesomeIcon
+                icon={isProjectDropdownOpen[user.email] ? faChevronDown : faChevronRight}
+                className="ml-2 cursor-pointer"
+                onClick={() => toggleProjectDropdown(user.email)}
+            />
+        )}
+    </div>
+
+    {/* Dropdown for all projects */}
+    {isProjectDropdownOpen[user.email] && Array.isArray(user.project) && user.project.length > 1 && (
+        <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+            <ul>
+                {user.project.map((project) => (
+                    <li 
+                        key={project._id} 
+                        className="py-2 cursor-pointer hover:bg-gray-100 text-center"
+                        onClick={() => console.log('Selected project:', project.projectName, 'for', user.email)}
+                    >
+                        {project.projectName}
+                    </li>
+                ))}
+            </ul>
+        </div>
+    )}
+</td>
+
 
 
                         <td className="px-6 py-4 whitespace-nowrap">

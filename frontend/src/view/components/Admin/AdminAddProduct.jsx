@@ -56,6 +56,7 @@ const AdminAddProduct = () => {
         image: imageUrl ? { url: imageUrl, publicId: selectedImage.name } : null,
       };
 
+      // Send the product data to the backend
       const response = await axios.post('http://localhost:5000/api/users/addproduct', productData);
 
       console.log(response.data);

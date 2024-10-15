@@ -16,7 +16,8 @@ const QuotationStep4 = ({ prevStep, formData }) => {
             const response = await fetch('http://localhost:5000/api/users/quotation', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*',
                 },
                 body: JSON.stringify(formData)
             });

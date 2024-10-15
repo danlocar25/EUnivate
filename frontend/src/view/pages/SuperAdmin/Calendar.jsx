@@ -64,7 +64,7 @@ const Calendar = ({ tasks }) => {
               event.task.assignee.map((member, index) => (
                 <img
                   key={index}
-                  src={member.profilePicture?.url || '/path/to/default/avatar.png'}
+                  src={member.profilePicture?.url || member.profilePicture}
                   alt={member.name}
                   className="w-8 h-8 rounded-full object-cover border-2 border-white shadow-md"
                   title={member.name}

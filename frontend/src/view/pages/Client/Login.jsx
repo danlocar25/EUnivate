@@ -31,9 +31,9 @@ const Login = () => {
         email,
         password,
       });
-
+  
       const data = response.data;
-
+  
       if (response.status === 200) {
         if (data.twoFactorEnabled) {
           localStorage.setItem('user', JSON.stringify({
@@ -44,7 +44,7 @@ const Login = () => {
           navigate('/verify-2fa-pending');
         } else {
           const { _id, firstName, lastName, email, role, username, phoneNumber, profilePicture, accessToken, twoFactorToken } = data;
-
+  
           localStorage.setItem('user', JSON.stringify({
             _id,
             firstName,
@@ -57,13 +57,13 @@ const Login = () => {
             twoFactorToken,
             accessToken,
           }));
-
+  
           if (rememberMe) {
             const newCreds = { email, password };
             const updatedCreds = [...savedCredentials.filter((cred) => cred.email !== email), newCreds];
             localStorage.setItem('savedCredentials', JSON.stringify(updatedCreds));
           }
-
+  
           const roleLowerCase = role.toLowerCase(); 
           if (roleLowerCase === 'superadmin') {
             navigate('/superadmin/dashboard');
@@ -71,6 +71,8 @@ const Login = () => {
             navigate('/admin');
           } else if (roleLowerCase === 'member') {
             navigate('/member-dashboard');
+          } else if (roleLowerCase === 'guest') {
+            navigate('/guest-dashboard'); // New route for guest accounts
           } else if (roleLowerCase === 'user') {
             navigate('/');
           } else {
@@ -90,6 +92,7 @@ const Login = () => {
       console.error('Error logging in:', error);
     }
   };
+  
 
   const handleEmailFocus = () => {
     setShowSuggestions(true);

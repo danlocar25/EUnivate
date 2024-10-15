@@ -30,7 +30,7 @@ const Projects = () => {
 
   const handleDelete = async (projectId) => {
     try {
-      await axios.delete(`http://localhost:5000/api/users/projects/${projectId}`);
+      await axios.delete('http://localhost:5000/api/users/projects/${projectId}');
       setProjects(projects.filter(project => project._id !== projectId));
     } catch (error) {
       console.error('Error deleting project:', error);
