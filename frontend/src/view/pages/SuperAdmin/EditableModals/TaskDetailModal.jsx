@@ -414,6 +414,7 @@ const handleSaveStatus = async () => {
         const newComment = {
           userId: currentUserId,  // Ensure this is the correct `id`
           text: comment,
+          profilePicture: user.profilePicture
         };
   
       try {
@@ -782,7 +783,7 @@ const handleSaveStatus = async () => {
             <ul className="list-disc list-inside">
               {commentsList.map((cmt, index) => (
                 <li key={index} className="mt-1 flex items-start text-gray-500">
-                  <img src={cmt.profilePicture?.url} 
+                  <img src={cmt.profilePicture?.url || cmt.profilePicture} 
                   alt={cmt.username} 
                   className="w-8 h-8 rounded-full mr-2" />
                   <div>

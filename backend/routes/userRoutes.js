@@ -21,7 +21,7 @@ const router = express.Router();
       //SuperAdmin
       import { addMemberToProject } from '../controllers/SuperAdmin/Project/sa-addMember.js';
       import { assignProjectToUser } from '../controllers/SuperAdmin/Project/assignUserProjectController.js';
-      import { createSaNewProject, getAllProjects, getProjectById, inviteUsersToProject } from '../controllers/SuperAdmin/Project/saNewProjectController.js';
+      import { createSaNewProject, getAllProjects, getProjectById, deleteSaNewProject} from '../controllers/SuperAdmin/Project/saNewProjectController.js';
       import { getAddedMembers, createTask, getTasks, getTaskById, updateTask, updateTaskObjectives, addCommentToTask, getTaskComments, getTasksByProjectId, deleteTask } from '../controllers/SuperAdmin/Task/saAddTaskController.js';  
       import { protect, verifySuperAdmin } from '../middlewares/middleware.js'; 
       import { inviteUsers, updateUserRole, getInvitedUsers, removeInvitedMember, getUsers} from '../controllers/SuperAdmin/People/peopleController.js';
@@ -54,6 +54,7 @@ const router = express.Router();
         router.get('/sa-getnewproject', protect, getAllProjects);
         router.get('/sa-getnewproject/:id', protect,  getProjectById)
         router.get('/findByUsername/:username', findUserByUsername);
+        router.delete('/sa-project-delete/:projectId', deleteSaNewProject);
 
         //Workspace
         router.post('/workspace', protect, addNewWorkspace);

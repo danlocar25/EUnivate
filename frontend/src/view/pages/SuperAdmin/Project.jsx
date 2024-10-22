@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
-import { FaCalendar, FaCheckCircle, FaPlus } from 'react-icons/fa';
+import { FaCalendar, FaCheckCircle, FaPlus,FaTrash  } from 'react-icons/fa';
 import { useNavigate, useOutletContext } from 'react-router-dom'; 
 import AdminNavbar from '../../components/SuperAdmin/AdminNavbar.jsx';
 import LoadingSpinner from './Loading Style/Fill File Loading/Loader.jsx';
@@ -231,6 +231,35 @@ const Project = () => {
     }, 3000);
   };
 
+
+  const handleDeleteProject = async (projectId) => {
+    const confirmed = window.confirm("Are you sure you want to delete this project?");
+    if (confirmed) {
+      try {
+        const user = JSON.parse(localStorage.getItem('user'));
+        const accessToken = user ? user.accessToken : null;
+  
+        if (!accessToken) {
+          setError('No access token found. Please log in again.');
+          return;
+        }
+  
+        await axios.delete(`http://localhost:5000/api/users/sa-project-delete/${projectId}`, {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        });
+  
+        setProjects(projects.filter(project => project._id !== projectId)); // Update the projects state
+        toast.success("Project deleted successfully!");
+      } catch (error) {
+        console.error('Error deleting project:', error);
+        setError('An error occurred while deleting the project.');
+      }
+    }
+  };
+  
+
   const calculateProgress = (projectId) => {
     const { totalTasks, doneTasks } = taskCounts[projectId] || { totalTasks: 0, doneTasks: 0 };
     return totalTasks > 0 ? (doneTasks / totalTasks) * 100 : 0;
@@ -364,56 +393,67 @@ const Project = () => {
         </div>
       )}
 
-      <div className={`mt-20 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-4 ${isNavOpen ? 'mt-28' : 'mt-20'}`}>
-        {projects.map((project) => (
-          <div
-            key={project._id}
-            className="bg-white p-4 rounded-md shadow-md border border-gray-200 mt-2 relative cursor-pointer w-full"
-            onClick={() => handleProjectClick(project)}
-          >
-            {project.thumbnail && (
-              <img
-                src={project.thumbnail.url}
-                alt={project.projectName}
-                className="w-full h-32 object-cover rounded-md"
-              />
-            )}
-            <h3 className="text-lg font-semibold mt-2">{project.projectName}</h3>
-            <div className="flex items-center text-gray-500 mt-2">
-              
-              <FaCalendar className="mr-2" />
-              <p>{new Date(project.createdAt).toLocaleDateString() || 'No date available'}</p>
-              <FaCheckCircle className="ml-5" />
-              <p className="ml-2">
-                {taskCounts[project._id] ? taskCounts[project._id].doneTasks : 'Loading...'}
-              </p>
-              <div className="flex items-center justify-end ml-9 -space-x-4">
-                  {project.invitedUsers && project.invitedUsers.slice(0, 3).map(user => (
-                    <img
-                      key={user._id}
-                      src={user.profilePicture?.url || user.profilePicture} // Ensure it falls back to a default if no picture
-                      alt={user.username || 'Profile Picture'}
-                      className="w-8 h-8 rounded-full object-cover -ml-2 border-2 border-white"
-                    />
-                  ))}
-              </div>
-            </div>
-
-            {/* Progress Bar */}
-            <div className="flex items-center mt-4">
-              <div className="w-full bg-gray-200 rounded-full h-2 relative">
-                <div
-                  className="bg-green-500 h-2 rounded-full"
-                  style={{ width: `${calculateProgress(project._id)}%` }} // Dynamically set progress width
-                ></div>
-              </div>
-              <p className="ml-2 text-gray-500">
-                {`${Math.floor(calculateProgress(project._id))}%`}
-              </p>
-            </div>
-          </div>
-        ))}
+<div className={`mt-20 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-4 ${isNavOpen ? 'mt-28' : 'mt-20'}`}>
+  {projects.map((project) => (
+    <div
+      key={project._id}
+      className="bg-white p-4 rounded-md shadow-md border border-gray-200 mt-2 relative cursor-pointer w-full"
+      onClick={() => handleProjectClick(project)}
+    >
+      {/* Move the FaTrash icon to the top-right corner */}
+      <FaTrash 
+        className="absolute top-2 right-2 bg-white rounded-2xl text-3xl p-1 text-red-500 cursor-pointer"
+        onClick={(e) => {
+          e.stopPropagation(); // Prevent the parent onClick from being triggered
+          handleDeleteProject(project._id);
+        }}
+      />
+      
+      {project.thumbnail && (
+        <img
+          src={project.thumbnail.url}
+          alt={project.projectName}
+          className="w-full h-32 object-cover rounded-md"
+        />
+      )}
+      
+      <h3 className="text-lg font-semibold mt-2">{project.projectName}</h3>
+      <div className="flex items-center text-gray-500 mt-2">
+        <FaCalendar className="mr-2" />
+        <p>{new Date(project.createdAt).toLocaleDateString() || 'No date available'}</p>
+        <FaCheckCircle className="ml-5" />
+        <p className="ml-2">
+          {taskCounts[project._id] ? taskCounts[project._id].doneTasks : 'Loading...'}
+        </p>
+        <div className="flex items-center justify-end ml-9 -space-x-4">
+          {project.invitedUsers && project.invitedUsers.slice(0, 3).map(user => (
+            <img
+              key={user._id}
+              src={user.profilePicture?.url || user.profilePicture} // Ensure it falls back to a default if no picture
+              alt={user.username || 'Profile Picture'}
+              className="w-8 h-8 rounded-full object-cover -ml-2 border-2 border-white"
+            />
+          ))}
+        </div>
       </div>
+
+      {/* Progress Bar */}
+      <div className="flex items-center mt-4">
+        <div className="w-full bg-gray-200 rounded-full h-2 relative">
+          <div
+            className="bg-green-500 h-2 rounded-full"
+            style={{ width: `${calculateProgress(project._id)}%` }} // Dynamically set progress width
+          ></div>
+        </div>
+        <p className="ml-2 text-gray-500">
+          {`${Math.floor(calculateProgress(project._id))}%`}
+        </p>
+      </div>
+    </div>
+  ))}
+</div>
+
+
 
     </div>
   );

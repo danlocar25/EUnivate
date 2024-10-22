@@ -10,10 +10,7 @@
   const commentSchema = new mongoose.Schema({
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }, // User ID
     userName: { type: String, required: true }, // Name of the commenter
-    profilePicture: {
-      publicId: { type: String, required: true },
-      url: { type: String, required: true }
-    },
+    profilePicture: {type: String, required: true },
     text: { type: String, required: true }, // The comment text
     createdAt: { type: Date, default: Date.now } // Timestamp
   });

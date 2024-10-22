@@ -1,6 +1,6 @@
 import SaNewProject from '../../../models/SuperAdmin/saNewProject.js';
 import Workspace from '../../../models/SuperAdmin/addWorkspaceModel.js';
-
+import User from '../../../models/Client/userModels.js';
 
 
 export const createSaNewProject = async (req, res) => {
@@ -135,5 +135,37 @@ export const inviteUsersToProject = async (req, res) => {
   } catch (error) {
     console.error("Error in inviting users:", error.message);
     return res.status(500).json({ error: error.message || 'An error occurred while inviting users' });
+  }
+};
+
+
+// Delete project and remove the project from associated users' project lists
+export const deleteSaNewProject = async (req, res) => {
+  const { projectId } = req.params;  // Get projectId from request params
+
+  try {
+    // Find the project to be deleted
+    const project = await SaNewProject.findById(projectId).populate('invitedUsers');
+    if (!project) {
+      return res.status(404).json({ message: 'Project not found' });
+    }
+
+    // Remove the project from all invited users' projects list
+    const invitedUsers = project.invitedUsers;
+    await Promise.all(
+      invitedUsers.map(async (user) => {
+        await User.findByIdAndUpdate(user._id, {
+          $pull: { projects: project._id }  // Remove project from users' projects array
+        });
+      })
+    );
+
+    // Delete the project from the database
+    await SaNewProject.findByIdAndDelete(projectId);
+
+    return res.status(200).json({ message: 'Project and associations deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting project:', error);
+    return res.status(500).json({ message: 'An error occurred while deleting the project' });
   }
 };

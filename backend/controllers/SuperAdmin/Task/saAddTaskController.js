@@ -428,64 +428,75 @@ import { io } from '../../../index.js';
       }
     };
 
-    // Controller to add a comment to a task
-    export const addCommentToTask = async (req, res) => {
-      try {
-        const { taskId } = req.params; // Get task ID from URL
-        const { userId, text } = req.body; // Only receive userId and text from the request
+   // Controller to add a comment to a task
+export const addCommentToTask = async (req, res) => {
+  try {
+    const { taskId } = req.params; // Get task ID from URL
+    const { userId, text } = req.body; // Only receive userId and text from the request
 
-        if (!taskId || !userId || !text) {
-          return res.status(400).json({
-            success: false,
-            message: 'Task ID, user ID, and comment text are required.'
-          });
+    console.log('Received taskId:', taskId);
+    console.log('Received userId:', userId);
+    console.log('Received comment text:', text);
+
+    if (!taskId || !userId || !text) {
+      console.log('Missing required fields.');
+      return res.status(400).json({
+        success: false,
+        message: 'Task ID, user ID, and comment text are required.'
+      });
+    }
+
+    // Find the user to get the userName and profilePicture
+    const user = await User.findById(userId).select('username profilePicture');
+    console.log('Fetched user:', user);
+
+    if (!user) {
+      console.log('User not found.');
+      return res.status(404).json({
+        success: false,
+        message: 'User not found.'
+      });
+    }
+
+    // Find the task and add the comment with the fetched user details
+    const updatedTask = await saAddTask.findByIdAndUpdate(
+      taskId,
+      {
+        $push: {
+          comments: {
+            userId,
+            userName: user.username,
+            profilePicture: user.profilePicture,
+            text
+          }
         }
+      },
+      { new: true, runValidators: true } // Return the updated document
+    );
 
-        // Find the user to get the userName and profilePicture
-        const user = await User.findById(userId).select('username profilePicture');
-        if (!user) {
-          return res.status(404).json({
-            success: false,
-            message: 'User not found.'
-          });
-        }
+    console.log('Updated task:', updatedTask);
 
-        // Find the task and add the comment with the fetched user details
-        const updatedTask = await saAddTask.findByIdAndUpdate(
-          taskId,
-          {
-            $push: {
-              comments: {
-                userId,
-                userName: user.username,
-                profilePicture: user.profilePicture,
-                text
-              }
-            }
-          },
-          { new: true, runValidators: true } // Return the updated document
-        );
+    if (!updatedTask) {
+      console.log('Task not found.');
+      return res.status(404).json({
+        success: false,
+        message: 'Task not found.'
+      });
+    }
 
-        if (!updatedTask) {
-          return res.status(404).json({
-            success: false,
-            message: 'Task not found.'
-          });
-        }
-
-        res.status(200).json({
-          success: true,
-          data: updatedTask.comments // Return the updated comments array
-        });
-      } catch (error) {
-        console.error('Error adding comment to task:', error);
-        res.status(500).json({
-          success: false,
-          message: 'Server Error. Could not add comment.',
-          error: error.message
-        });
-      }
-    };
+    res.status(200).json({
+      success: true,
+      data: updatedTask.comments // Return the updated comments array
+    });
+  } catch (error) {
+    console.error('Error adding comment to task:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server Error. Could not add comment.',
+      error: error.message
+    });
+  }
+};
 
 
     

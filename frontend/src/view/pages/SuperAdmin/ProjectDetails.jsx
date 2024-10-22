@@ -119,7 +119,7 @@ const ProjectDetails = () => {
                     }
                 } catch (error) {
                     console.error('Error fetching members:', error.response?.data || error.message);
-                    setError('Error fetching members.');
+                    setError('Invite members to people firs!.');
                 }
             };
     
@@ -365,65 +365,65 @@ return (
 </div>
 
 
-        {isUserModalOpen && (
-<div className="fixed inset-0 flex items-center justify-center z-50 bg-gray-500 bg-opacity-50">
-    <div className="relative bg-white p-6 md:p-8 rounded-md shadow-lg border border-gray-200 w-11/12 md:w-1/3 min-h-[400px]">
-        {error && (
-            <p className="text-red-700 p-2 rounded-md mb-4 text-sm md:text-base">
-                {error}
-            </p>
-        )}
-        <button
-className="absolute top-2 right-4 text-gray-600 text-2xl md:text-3xl p-2"
-onClick={handleCloseUserModal}
->
-&times;
-</button>
-
-       <h2 className="text-xl md:text-2xl font-semibold mb-4">Add Members</h2>
-
-
-        <div className="flex items-center mb-4">
-            <input
-                type="text"
-                placeholder="Search by email..."
-                className="flex-grow p-2 border border-gray-300 rounded-md text-sm md:text-base"
-                onChange={(e) => setSearchQuery(e.target.value)}
-                value={searchQuery}
-            />
-            <button
-className="ml-2 bg-red-600 text-white px-4 py-2 rounded-md text-base md:text-lg"
-onClick={handleAddMembers}
->
-Add Member
-</button>
-
-        </div>
-                    <ul className="mb-4">
-            {searchQuery ? (
-                filteredMembers.map(member => (
-                    <li key={member._id} className="flex items-center mb-2 text-sm md:text-base">
-                        <img
-                            src={typeof member.profilePicture === 'string' ? member.profilePicture : member.profilePicture?.url}
-                            alt={member.username}
-                            className="w-8 h-8 rounded-full mr-2"
-                        />
-                        <span>{member.email}</span>
-                        <button
-                            onClick={() => toggleMemberSelection(member)}
-                            className={`ml-auto p-1 border rounded-md text-sm md:text-base ${selectedMembers.some(selected => selected._id === member._id) ? 'bg-red-400' : 'bg-gray-200'}`}
-                        >
-                            {selectedMembers.some(selected => selected._id === member._id) ? 'Selected' : 'Select'}
-                        </button>
-                    </li>
-                ))
-            ) : (
-                <li className="text-gray-500">No members to display. Please enter an email to search.</li>
+{isUserModalOpen && (
+    <div className="fixed inset-0 flex items-center justify-center z-50 bg-gray-500 bg-opacity-50">
+        <div className="relative bg-white p-6 md:p-8 rounded-md shadow-lg border border-gray-200 w-11/12 md:w-1/3 min-h-[400px]">
+            {error && (
+                <p className="text-red-700 p-2 rounded-md mb-4 text-sm md:text-base">
+                    {error}
+                </p>
             )}
-        </ul>
+            <button
+                className="absolute top-2 right-4 text-gray-600 text-2xl md:text-3xl p-2"
+                onClick={handleCloseUserModal}
+            >
+                &times;
+            </button>
+
+            <h2 className="text-xl md:text-2xl font-semibold mb-4">Add Members</h2>
+
+            <div className="flex items-center mb-4">
+                <input
+                    type="text"
+                    placeholder="Search by email..."
+                    className="flex-grow p-2 border border-gray-300 rounded-md text-sm md:text-base"
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    value={searchQuery}
+                />
+                <button
+                    className="ml-2 bg-red-600 text-white px-4 py-2 rounded-md text-base md:text-lg"
+                    onClick={handleAddMembers}
+                >
+                    Add Member
+                </button>
+            </div>
+
+            <ul className="mb-4">
+                {filteredMembers.length > 0 ? (
+                    filteredMembers.map(member => (
+                        <li key={member._id} className="flex items-center mb-2 text-sm md:text-base">
+                            <img
+                                src={typeof member.profilePicture === 'string' ? member.profilePicture : member.profilePicture?.url}
+                                alt={member.username}
+                                className="w-8 h-8 rounded-full mr-2"
+                            />
+                            <span>{member.email}</span>
+                            <button
+                                onClick={() => toggleMemberSelection(member)}
+                                className={`ml-auto p-1 border rounded-md text-sm md:text-base ${selectedMembers.some(selected => selected._id === member._id) ? 'bg-red-400' : 'bg-gray-200'}`}
+                            >
+                                {selectedMembers.some(selected => selected._id === member._id) ? 'Selected' : 'Select'}
+                            </button>
+                        </li>
+                    ))
+                ) : (
+                    <li className="text-gray-500">No members to display.</li>
+                )}
+            </ul>
+        </div>
     </div>
-</div>
 )}
+
 
     </div>
 );
