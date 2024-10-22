@@ -1,19 +1,50 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import AdminNavbar from '../../components/SuperAdmin/AdminNavbar';
 import Members_Msg from './Message/Members_Msg'; // Import Members_Msg component
 import Chat from './Message/Chat'; // Import Chat component
 import { FaUsers } from 'react-icons/fa'; // Import icon for the mobile sidebar
 import { useWorkspace } from '../../components/SuperAdmin/workspaceContext'; // Use Workspace context
 
+const getInitials = (name) => {
+  const words = name.split(' ');
+  if (words.length > 1) {
+    return words[0].charAt(0).toUpperCase() + words[1].charAt(0).toUpperCase();
+  } else {
+    return words[0].charAt(0).toUpperCase();
+  }
+};
+
+const getColorFromName = (name) => {
+  const colors = ['bg-red-500', 'bg-blue-500', 'bg-yellow-500'];
+  const hash = [...name].reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  return colors[hash % colors.length];
+};
+
 const Messages = () => {
   const { selectedWorkspace } = useWorkspace();  // Get selected workspace from context
   const [isAccountDropdownOpen, setIsAccountDropdownOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false); // State for mobile sidebar
+  const [isChatOpen, setIsChatOpen] = useState(false); // State for chat visibility
+  const [isMembersOpen, setIsMembersOpen] = useState(false); // State for members visibility
   const [invitedUsers, setInvitedUsers] = useState([]); // State for invited users
   const [loading, setLoading] = useState(true); // Loading state
-  
+
+  const membersRef = useRef(null);
+  const chatRef = useRef(null);
+
   const toggleAccountDropdown = () => setIsAccountDropdownOpen(!isAccountDropdownOpen);
-  const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen); // Toggle sidebar for mobile
+
+  // Toggle members visibility for mobile, and close chat when opening members
+  const toggleSidebar = () => {
+    setIsMembersOpen(!isMembersOpen);  // Toggle members
+    if (isChatOpen) setIsChatOpen(false);  // Close chat if open
+  };
+
+  // Toggle chat visibility for mobile, and close members when opening chat
+  const toggleChat = () => {
+    setIsChatOpen(!isChatOpen);  // Toggle chat
+    if (isMembersOpen) setIsMembersOpen(false);  // Close members if open
+  };
 
   // Callback to get invited users from Members_Msg
   const handleInvitedUsers = (users) => {
@@ -27,6 +58,24 @@ const Messages = () => {
     selectedMembers: invitedUsers,
     imagePreview: 'https://via.placeholder.com/50'
   };
+
+  // Effect to close members or chat when clicked outside of them
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (membersRef.current && !membersRef.current.contains(event.target)) {
+        setIsMembersOpen(false); // Close members if clicked outside
+      }
+      if (chatRef.current && !chatRef.current.contains(event.target)) {
+        setIsChatOpen(false); // Close chat if clicked outside
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   useEffect(() => {
     if (selectedWorkspace) {
@@ -51,38 +100,18 @@ const Messages = () => {
         />
       </div>
 
-      {/* Main layout with Members_Msg and Chat side by side */}
-      <div className="flex flex-row gap-2">
+      {/* Main layout for desktop with Members_Msg and Chat side by side */}
+      <div className="hidden md:flex flex-row gap-2">
         {/* Left side box with Members_Msg component */}
-        <div className="hidden md:block bg-white w-1/4 p-4 shadow-md rounded-md">
+        <div className="bg-white w-1/4 p-4 shadow-md rounded-md">
           <Members_Msg 
             onInvitedUsersFetched={handleInvitedUsers}
             workspaceId={selectedWorkspace?._id} // Use the selected workspace ID
           />
         </div>
 
-        {/* Mobile Icon to toggle Members_Msg as sidebar */}
-        <div className="md:hidden flex items-center mb-auto">
-          <button onClick={toggleSidebar} className="text-gray-800 p-2 rounded-full shadow-md bg-white">
-            <FaUsers size={24} /> {/* Icon for mobile */}
-          </button>
-        </div>
-
-        {/* Sidebar for mobile */}
-        {isSidebarOpen && (
-          <div className="fixed inset-0 z-50 bg-gray-900 bg-opacity-50 flex">
-            <div className="bg-white w-3/4 h-full p-4 shadow-md rounded-md">
-              <Members_Msg 
-                onInvitedUsersFetched={handleInvitedUsers}
-                workspaceId={selectedWorkspace?._id} // Pass workspaceId to Members_Msg
-              />
-            </div>
-            <div className="w-1/4" onClick={toggleSidebar}></div>
-          </div>
-        )}
-
-        {/* Chat section */}
-        <div className="bg-white w-full md:w-3/4 p-4 shadow-md rounded-md flex-grow">
+        {/* Chat section for larger screens */}
+        <div className="bg-white w-3/4 p-4 shadow-md rounded-md flex-grow">
           {!loading ? (
             selectedWorkspace ? (
               <Chat group={group} />
@@ -94,6 +123,64 @@ const Messages = () => {
           )}
         </div>
       </div>
+
+{/* Mobile layout: Buttons at the top, chat or members below */}
+<div className="md:hidden flex flex-col items-center mb-auto space-y-4">
+  {/* Buttons side by side for members and chat */}
+  <div className="flex space-x-4">
+    {/* First icon (members toggle for mobile) */}
+    <button onClick={toggleSidebar} className="text-gray-800 p-2 rounded-full shadow-md bg-white w-10 h-10 flex items-center justify-center">
+      <FaUsers size={24} /> {/* Icon for mobile */}
+    </button>
+
+    {/* Second icon (chat toggle for mobile) */}
+    <button onClick={toggleChat} className={`p-2 rounded-full shadow-md w-10 h-10 flex items-center justify-center ${getColorFromName(group.groupName)}`}>
+      <div className="flex items-center justify-center text-white text-lg font-bold rounded-full">
+        {group.groupName ? getInitials(group.groupName) : 'W'}
+      </div>
+    </button>
+  </div>
+
+
+
+        {/* Conditionally render the Members_Msg section for mobile */}
+        {isMembersOpen && (
+          <div ref={membersRef} className="w-full max-w-md bg-white p-4 shadow-lg rounded-md mt-4 transition-transform duration-300 transform translate-y-0 opacity-100">
+            <Members_Msg 
+              onInvitedUsersFetched={handleInvitedUsers}
+              workspaceId={selectedWorkspace?._id} // Pass workspaceId to Members_Msg
+            />
+          </div>
+        )}
+
+        {/* Conditionally render the Chat section for mobile */}
+        {isChatOpen && (
+          <div ref={chatRef} className="w-full max-w-md bg-white p-4 shadow-lg rounded-md mt-4 transition-transform duration-300 transform translate-y-0 opacity-100">
+            {!loading ? (
+              selectedWorkspace ? (
+                <Chat group={group} />
+              ) : (
+                <p>Please select a workspace to view the chat.</p>
+              )
+            ) : (
+              <p>Loading chat...</p>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Sidebar for mobile */}
+      {isSidebarOpen && (
+        <div className="fixed inset-0 z-50 bg-gray-900 bg-opacity-50 flex">
+          <div className="bg-white w-3/4 h-full p-4 shadow-md rounded-md">
+            <Members_Msg 
+              onInvitedUsersFetched={handleInvitedUsers}
+              workspaceId={selectedWorkspace?._id} // Pass workspaceId to Members_Msg
+            />
+          </div>
+          <div className="w-1/4" onClick={toggleSidebar}></div>
+        </div>
+      )}
     </div>
   );
 };

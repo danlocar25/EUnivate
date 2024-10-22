@@ -7,6 +7,24 @@ import 'react-quill/dist/quill.snow.css';
 import DOMPurify from 'dompurify';
 import './Chat.css'; // Ensure this file exists
 
+// Helper function to get initials from the group name
+const getInitials = (name) => {
+  const words = name.split(' ');
+  if (words.length > 1) {
+    return words[0].charAt(0).toUpperCase() + words[1].charAt(0).toUpperCase();
+  } else {
+    return words[0].charAt(0).toUpperCase();
+  }
+};
+
+// Helper function to generate a consistent color based on group name
+const getColorFromName = (name) => {
+  const colors = ['bg-red-500', 'bg-blue-500', 'bg-yellow-500',];
+  // Calculate a hash value from the group name and use it to select a color
+  const hash = [...name].reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  return colors[hash % colors.length];
+};
+
 const emojis = ['😀', '😂', '😍', '👍', '👏'];
 const flagColors = ['red', 'yellow', 'green']; // Define flag colors
 let socket;
@@ -283,13 +301,18 @@ const Chat = ({ group }) => {
   }
   return (
     <div className="flex flex-col h-full w-full p-4">
-      {/* Header */}
-      <div className="flex items-center justify-start border-b pb-3 mb-4">
-        <div>
-          <h2 className="text-base sm:text-lg font-bold">{group.groupName} Chat</h2>
-          <p className="text-sm text-gray-500">General chat for {group.groupName}</p>
-        </div>
+    {/* Header */}
+    <div className="flex items-center justify-start border-b pb-3 mb-4">
+      <div
+        className={`w-10 h-10 flex items-center justify-center text-white text-lg font-bold rounded-full ${getColorFromName(group.groupName)}`}
+      >
+        {getInitials(group.groupName)}
       </div>
+      <div className="ml-3">
+        <h2 className="text-base sm:text-lg font-bold">{group.groupName} Chat</h2>
+        <p className="text-sm text-gray-500">General chat for {group.groupName}</p>
+      </div>
+    </div>
 
       {/* Chat Messages */}
       <div ref={chatContainerRef} className="flex-1 overflow-y-auto mb-4 no-scrollbar">

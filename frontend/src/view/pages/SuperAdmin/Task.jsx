@@ -149,14 +149,17 @@ const Task = () => {
             <div className="mt-4 flex gap-4">
                 <div className="p-6 bg-white border rounded-lg shadow-md w-full">
                 <div className="text-gray-600 text-sm md:text-base">
-    <div className="grid grid-cols-3 md:grid-cols-6 gap-4 font-medium mb-2">
-        <p className="text-xs md:text-sm">Task</p>
-        <p className="hidden md:block text-center">Due Date</p>
-        <p className="hidden md:block text-center">Priority</p>
-        <p className="text-center text-xs md:text-sm">Objectives</p>
-        <p className="text-center text-xs md:text-sm">Status</p>
-        <p className="hidden md:block text-right text-xs md:text-sm">Project</p> {/* Hide Project on mobile */}
-    </div>
+                <div className="grid grid-cols-3 md:grid-cols-6 gap-4 font-medium mb-2">
+    {/* Only show Task title on medium and larger screens */}
+    <p className="text-xs md:text-sm">Task</p> 
+    {/* Hide everything else on mobile */}
+    <p className="hidden md:block text-center">Due Date</p>
+    <p className="hidden md:block text-center">Priority</p>
+    <p className="hidden md:block text-center">Objectives</p>
+    <p className="hidden md:block text-center">Status</p>
+    <p className="hidden md:block text-right">Project</p> {/* Hide Project on mobile */}
+</div>
+
 
     {loading ? (
         <div className="flex justify-center">
@@ -164,33 +167,39 @@ const Task = () => {
         </div>
     ) : (
         <ul className="space-y-2">
-            {tasks.map((task) => (
-                <li
-                    key={task._id}
-                    className="relative grid grid-cols-3 md:grid-cols-6 gap-4 items-center mb-1 py-4 bg-white rounded-lg cursor-pointer transition-all duration-300 ease-in-out"
-                    onClick={() => openModal(task)}
-                >
-                    <div className="absolute inset-0 bg-transparent hover:bg-gray-200 hover:shadow-md hover:scale-[1.02] transition-all duration-300 ease-in-out -mx-4 py-4"></div>
+        {tasks.map((task) => (
+            <li
+                key={task._id}
+                className="relative grid grid-cols-3 md:grid-cols-6 gap-4 items-center mb-1 py-4 bg-white rounded-lg cursor-pointer transition-all duration-300 ease-in-out"
+                onClick={() => openModal(task)}
+            >
+                <div className="absolute inset-0 bg-transparent hover:bg-gray-200 hover:shadow-md hover:scale-[1.02] transition-all duration-300 ease-in-out -mx-4 py-4"></div>
+    
+                {/* On mobile, only show the check circle and task name */}
+                <div className="flex items-center relative z-10 col-span-3 md:col-span-1">
+                    {renderStatusIcon(task.status)}
+                    <p className="ml-2 font-bold text-sm md:text-base">{task.taskName}</p>
+                </div>
+    
+                {/* Only visible on medium screens and above */}
+                <p className="hidden md:block text-center relative z-10">{formatDate(task.dueDate)}</p>
+                <div className="hidden md:flex items-center justify-center relative z-10">
+                    <FaFlag className={`mr-1 text-xs md:text-sm ${getPriorityColor(task.priority)}`} />
+                    <p className="text-xs md:text-sm">{task.priority}</p>
+                </div>
+                
+              {/* Objectives visible only on medium screens and above */}
+<p className="hidden md:flex text-center relative items-center justify-center text-xs md:text-sm">
+    <img src={abt1Image} alt="Objective Icon" className="w-4 h-4 md:w-5 md:h-5 mr-1" />
+    {task.objectives.length} Objectives
+</p>
 
-                    <div className="flex items-center relative z-10">
-                        {renderStatusIcon(task.status)}
-                        <p className="ml-2 font-bold text-sm md:text-base">{task.taskName}</p>
-                    </div>
-                    <p className="hidden md:block text-center relative z-10">{formatDate(task.dueDate)}</p>
-                    <div className="hidden md:flex items-center justify-center relative z-10">
-                        <FaFlag className={`mr-1 text-xs md:text-sm ${getPriorityColor(task.priority)}`} />
-                        <p className="text-xs md:text-sm">{task.priority}</p>
-                    </div>
-                    <p className="text-center relative  flex items-center justify-center">
-                        <img src={abt1Image} alt="Objective Icon" className="w-5 h-5 mr-2" /> 
-                        {task.objectives.length} Objectives
-                    </p>
-
-                    <p className="text-center relative  text-sm md:text-base">{task.status}</p>
-                    <p className="hidden md:block text-right relative z-10 text-sm md:text-base">{task.projectName}</p> {/* Hide Project on mobile */}
-                </li>
-            ))}
-        </ul>
+                <p className="text-center relative text-sm md:text-base hidden md:block">{task.status}</p>
+                <p className="hidden md:block text-right relative z-10 text-sm md:text-base">{task.projectName}</p>
+            </li>
+        ))}
+    </ul>
+    
     )}
 
 </div>
